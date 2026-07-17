@@ -11,7 +11,7 @@
   <div class="orb orb-a"></div><div class="orb orb-b"></div>
   <main>
     <header>
-      <div class="brand"><span class="sigil">⊕</span><div><b>TZAR</b><small>PRODUCT 001 · v0.6 SEMANTIC AUDIT</small></div></div>
+      <div class="brand"><span class="sigil">⊕</span><div><b>TZAR</b><small>PRODUCT 001 · v0.7 CALIBRATION BETA</small></div></div>
       <div id="status" class="status" data-tone="idle">Смысловой контур готов</div>
     </header>
 
@@ -23,6 +23,7 @@
 
     <nav class="mode-switch" aria-label="Режим продукта">
       <button class="mode active" data-mode="semantic">Смысловой режим <span>β</span></button>
+      <button class="mode" data-mode="calibration">Калибровочный корпус <span>12</span></button>
       <button class="mode" data-mode="builder">Структурный контур</button>
       <button class="mode" data-mode="json">Профессиональный JSON</button>
     </nav>
@@ -36,6 +37,18 @@
         <div id="semantic-variants" class="forms semantic-variants"></div>
         <div class="local-note"><span>ЛОКАЛЬНО</span><p>Анализ идёт в отдельном потоке браузера. При первом запуске загружается около 150 МБ библиотеки и модели; тексты не передаются сервису анализа. Вычисление можно отменить.</p></div>
         <button id="analyze-semantic" class="primary"><span>Провести смысл через контур</span><b>→</b></button>
+      </div>
+
+      <div class="panel input-panel calibration-panel">
+        <div class="panel-head"><div><small>01 · АВТОРСКОЕ РАЗЛИЧЕНИЕ</small><h2>TZAR-CALIBRATION-001</h2></div><div id="calibration-progress" class="calibration-progress">0 / 12</div></div>
+        <div class="blind-note"><span>СЛЕПОЙ ОБЗОР</span><p>Первичная метка ассистента скрыта до твоего решения и не влияет на выбор.</p></div>
+        <article id="calibration-case" class="calibration-case"><div class="empty">Загрузка корпуса…</div></article>
+        <div class="calibration-labels" aria-label="Авторское решение">
+          <button data-label="preserved"><b>Проводимо</b><span>отношение сохранено</span></button>
+          <button data-label="review"><b>Различить</b><span>недостаточно основания</span></button>
+          <button data-label="rupture"><b>Разрыв</b><span>отношение подменено</span></button>
+        </div>
+        <div class="calibration-navigation"><button id="calibration-prev" class="ghost">← Предыдущий</button><button id="export-calibration" class="ghost" disabled>Экспорт решений</button><button id="calibration-next" class="ghost">Следующий →</button></div>
       </div>
 
       <div class="panel input-panel builder-panel">
