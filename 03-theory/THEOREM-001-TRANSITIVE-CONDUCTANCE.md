@@ -2,12 +2,13 @@
 id: TZAR-THEOREM-001
 title: Транзитивная проводимость
 author: Александр Лацинник
-status: verified
+status: canonical
 version: 0.1.0
 derived_from:
   - TZAR-AXIOM-001
 fixed_at: 2026-07-17
 verified_at: 2026-07-17
+canonicalized_at: 2026-07-17
 verified_by:
   - TZAR-EXPERIMENT-001
 language: ru
@@ -123,6 +124,6 @@ contour_node: theory
 
 ## 10. Статус
 
-Текущий статус: `verified`.
+Текущий статус: `canonical`.
 
-Статус подтверждён экспериментом TZAR-EXPERIMENT-001: три положительные формы сохранили единый отпечаток инварианта, отрицательный контроль был обнаружен. Для перехода в `canonical` требуется авторская фиксация Александра Лацинника.
+Статус подтверждён экспериментом TZAR-EXPERIMENT-001 и канонизирован авторским запуском первого продукта Александром Лацинником 17 июля 2026 года.
