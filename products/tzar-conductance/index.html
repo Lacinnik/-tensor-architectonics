@@ -1,12 +1,66 @@
 <!doctype html>
-<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#071529"><title>TZAR Conductance</title><link rel="stylesheet" href="./styles.css"></head>
-<body data-mode="builder"><div class="orb orb-a"></div><div class="orb orb-b"></div><main>
-<header><div class="brand"><span class="sigil">⊕</span><div><b>TZAR</b><small>PRODUCT 001 · v0.4</small></div></div><div id="status" class="status" data-tone="idle">Ожидание конструкта</div></header>
-<section class="hero"><p class="eyebrow">Тензорная Архитектоника · проводимость конструкта</p><h1>Форма выходит вовне.<br><em>Целостность возвращается проверкой.</em></h1><p class="lead">Создайте паспорт цепи или загрузите полученный JSON-отчёт, чтобы независимо обнаружить любую подмену после его формирования.</p></section>
-<nav class="mode-switch"><button class="mode active" data-mode="builder">Визуальный конструктор</button><button class="mode" data-mode="json">Профессиональный JSON</button></nav>
-<section class="workspace">
-<div class="panel input-panel builder-panel"><div class="panel-head"><div><small>01 · ОСЬ</small><h2>Исходный конструкт</h2></div><div class="actions"><button id="example" class="ghost">Пример</button><button id="reset" class="ghost">Сбросить</button></div></div><div id="source-fields" class="source-fields"></div><div class="forms-title"><div><small>02 · ФОРМЫ</small><h2>Геометрии проявления</h2></div><div class="actions"><button id="add-form" class="ghost">+ Форма</button><button id="add-negative" class="ghost">+ Контроль</button></div></div><div id="forms" class="forms"></div><button id="verify" class="primary"><span>Провести через контур</span><b>→</b></button></div>
-<div class="panel input-panel json-panel"><div class="panel-head"><div><small>01 · ДАННЫЕ</small><h2>JSON-конструкт</h2></div></div><textarea id="payload" spellcheck="false"></textarea><button id="verify-json" class="primary"><span>Проверить JSON</span><b>→</b></button></div>
-<div class="panel output-panel"><div class="panel-head"><div><small>03 · РАЗЛИЧЕНИЕ</small><h2>Карта проводимости</h2></div><div class="actions"><button id="verify-passport" class="ghost">Проверить паспорт</button><button id="export-json" class="ghost" disabled>JSON</button><button id="export-markdown" class="ghost" disabled>Markdown</button><input id="passport-file" type="file" accept=".json,application/json" hidden></div></div><div id="passport-status"></div><div id="result"><div class="empty">Соберите конструкт и запустите проверку.</div></div></div>
-</section><footer><span>σ · SHA-256 · TZAR-THEOREM-001</span><p>Структурная проверка. Инструмент не измеряет супру и не подменяет научное доказательство.</p></footer>
-</main><script type="module" src="./app.mjs"></script></body></html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#071529">
+  <title>TZAR Conductance</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body data-mode="semantic">
+  <div class="orb orb-a"></div><div class="orb orb-b"></div>
+  <main>
+    <header>
+      <div class="brand"><span class="sigil">⊕</span><div><b>TZAR</b><small>PRODUCT 001 · v0.5 SEMANTIC BETA</small></div></div>
+      <div id="status" class="status" data-tone="idle">Смысловой контур готов</div>
+    </header>
+
+    <section class="hero">
+      <p class="eyebrow">Тензорная Архитектоника · проводимость смысла</p>
+      <h1>Теперь сравниваются<br><em>не только строки.</em></h1>
+      <p class="lead">Введите исходную мысль и её преобразования. Локальная модель оценит смысловую близость, а заданные вами критические опоры не позволят похожему тексту скрыть подмену.</p>
+    </section>
+
+    <nav class="mode-switch" aria-label="Режим продукта">
+      <button class="mode active" data-mode="semantic">Смысловой режим <span>β</span></button>
+      <button class="mode" data-mode="builder">Структурный контур</button>
+      <button class="mode" data-mode="json">Профессиональный JSON</button>
+    </nav>
+
+    <section class="workspace">
+      <div class="panel input-panel semantic-panel">
+        <div class="panel-head"><div><small>01 · ИСХОДНАЯ МЫСЛЬ</small><h2>Смысловой инвариант</h2></div><div class="actions"><button id="semantic-example" class="ghost">Пример</button><button id="add-variant" class="ghost">+ Вариант</button></div></div>
+        <label class="field semantic-field"><span>Исходный текст</span><textarea id="semantic-source" placeholder="Сформулируйте мысль, которую нужно провести через преобразования"></textarea></label>
+        <label class="field semantic-field anchors-field"><span>Критические опоры · одна точная фраза на строку</span><textarea id="semantic-anchors" placeholder="Фразы, исчезновение которых означает подмену"></textarea></label>
+        <div class="forms-title"><div><small>02 · ПРЕОБРАЗОВАНИЯ</small><h2>Варианты выражения</h2></div></div>
+        <div id="semantic-variants" class="forms semantic-variants"></div>
+        <div class="local-note"><span>ЛОКАЛЬНО</span><p>Тексты не отправляются на сервер. При первом запуске браузер загрузит квантованную модель и сохранит её в кэше.</p></div>
+        <button id="analyze-semantic" class="primary"><span>Провести смысл через контур</span><b>→</b></button>
+      </div>
+
+      <div class="panel input-panel builder-panel">
+        <div class="panel-head"><div><small>01 · ОСЬ</small><h2>Исходный конструкт</h2></div><div class="actions"><button id="example" class="ghost">Пример</button><button id="reset" class="ghost">Сбросить</button></div></div>
+        <div id="source-fields" class="source-fields"></div>
+        <div class="forms-title"><div><small>02 · ФОРМЫ</small><h2>Геометрии проявления</h2></div><div class="actions"><button id="add-form" class="ghost">+ Форма</button><button id="add-negative" class="ghost">+ Контроль</button></div></div>
+        <div id="forms" class="forms"></div>
+        <button id="verify" class="primary"><span>Провести через контур</span><b>→</b></button>
+      </div>
+
+      <div class="panel input-panel json-panel">
+        <div class="panel-head"><div><small>01 · ДАННЫЕ</small><h2>JSON-конструкт</h2></div></div>
+        <textarea id="payload" spellcheck="false"></textarea>
+        <button id="verify-json" class="primary"><span>Проверить JSON</span><b>→</b></button>
+      </div>
+
+      <div class="panel output-panel">
+        <div class="panel-head"><div><small>03 · РАЗЛИЧЕНИЕ</small><h2 id="output-title">Карта смысловой проводимости</h2></div><div class="actions"><button id="verify-passport" class="ghost">Проверить паспорт</button><button id="export-json" class="ghost" disabled>JSON</button><button id="export-markdown" class="ghost" disabled>Markdown</button><input id="passport-file" type="file" accept=".json,application/json" hidden></div></div>
+        <div id="passport-status"></div>
+        <div id="result"><div class="empty">Запустите смысловую проверку. Первая загрузка модели займёт некоторое время.</div></div>
+      </div>
+    </section>
+
+    <footer><span>SEMANTIC β · SHA-256 · TZAR-PRODUCT-001</span><p>Модельная близость — средство различения, а не доказательство тождества. Пороговые значения требуют предметной калибровки.</p></footer>
+  </main>
+  <script type="module" src="./app.mjs"></script>
+</body>
+</html>
