@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { example } from "./example.mjs";
-import { extractInvariant, verifyPayload } from "./core.mjs";
+import { extractInvariant, verifyPayload, verifyReportSeal } from "./core.mjs";
 
 const report = await verifyPayload(example);
 assert.equal(report.pass, true);
@@ -15,6 +15,7 @@ assert.equal(report.negative[0].differences[0].field, "axisDefinition");
 assert.equal(report.ledger.length, 3);
 assert.ok(report.ledger.every((entry) => entry.continuous));
 assert.equal(report.firstBreak, null);
+assert.equal((await verifyReportSeal(report)).valid, true);
 assert.equal(new Set(report.ledger.map((entry) => entry.transitionHash)).size, 3);
 assert.throws(() => extractInvariant({ invariant: { constructId: "broken" } }), /author/);
 
@@ -24,5 +25,9 @@ assert.equal((await verifyPayload(broken)).pass, false);
 const brokenReport = await verifyPayload(broken);
 assert.equal(brokenReport.firstBreak.index, 2);
 assert.equal(brokenReport.ledger[2].continuous, false);
+const tamperedPassport = structuredClone(report);
+tamperedPassport.positive[0].label = "Подменённая форма";
+assert.equal((await verifyReportSeal(tamperedPassport)).valid, false);
+assert.equal((await verifyReportSeal({})).valid, false);
 
-console.log("TZAR-PRODUCT-001: 17 assertions passed");
+console.log("TZAR-PRODUCT-001: 20 assertions passed");
