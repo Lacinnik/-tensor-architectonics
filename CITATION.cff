@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "Если вы используете материалы Тензорной Архитектоники, цитируйте этот репозиторий."
+title: "Тензорная Архитектоника"
+type: dataset
+authors:
+  - family-names: "Лацинник"
+    given-names: "Александр"
+repository-code: "https://github.com/Lacinnik/-tensor-architectonics"
+date-released: 2026-07-17
