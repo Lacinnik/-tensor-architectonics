@@ -36,9 +36,13 @@
 
 1. [**TZAR-EXPERIMENT-001 — «Проводимость Осевания»**](../05-engineering-applications/EXPERIMENT-001/README.md) — результат `PASS`; проверяет TZAR-THEOREM-001.
 
+## Калибровочные корпуса
+
+1. [**TZAR-CALIBRATION-001 — «Первичный корпус смысловой проводимости»**](../products/tzar-conductance/calibration/) — 12 случаев, статус `candidate`; ожидает авторского различения.
+
 ## Цифровые продукты
 
-1. [**TZAR-PRODUCT-001 — «TZAR Conductance»**](../05-engineering-applications/TZAR-PRODUCT-001.md) — версия `0.4.0`, статус `mvp`; рабочая форма: [browser application](../products/tzar-conductance/).
+1. [**TZAR-PRODUCT-001 — «TZAR Conductance»**](../05-engineering-applications/TZAR-PRODUCT-001.md) — версия `0.7.0`, статус `calibration-beta`; рабочая форма: [browser application](../products/tzar-conductance/).
 
 ## Принцип публикации
 
