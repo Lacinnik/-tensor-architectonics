@@ -1,0 +1,33 @@
+name: Инженерный эксперимент
+description: Зафиксировать проверяемое применение ТзАр
+title: "[ЭКСПЕРИМЕНТ] "
+labels: ["engineering", "experiment"]
+body:
+  - type: textarea
+    id: purpose
+    attributes:
+      label: Цель
+    validations:
+      required: true
+  - type: textarea
+    id: configuration
+    attributes:
+      label: Конфигурация
+      description: Вход, операторы, геометрия и ожидаемый выход.
+    validations:
+      required: true
+  - type: textarea
+    id: metrics
+    attributes:
+      label: Метрики
+      description: α, IЯ, Cm, Q, T и наблюдаемые показатели.
+  - type: textarea
+    id: result
+    attributes:
+      label: Результат и воспроизводимость
+  - type: input
+    id: provenance
+    attributes:
+      label: Автор и дата
+    validations:
+      required: true
