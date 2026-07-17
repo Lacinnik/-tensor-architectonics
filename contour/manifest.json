@@ -121,13 +121,36 @@
       "executedAt": "2026-07-17"
     },
     {
+      "id": "TZAR-CALIBRATION-001",
+      "type": "calibration-corpus",
+      "title": "Первичный корпус смысловой проводимости ТзАр",
+      "path": "products/tzar-conductance/calibration/corpus.v1.json",
+      "documentation": "products/tzar-conductance/calibration/README.md",
+      "version": "1.0.0",
+      "status": "candidate",
+      "language": "ru",
+      "caseCount": 12,
+      "labels": [
+        "preserved",
+        "review",
+        "rupture"
+      ],
+      "labelAuthority": "assistant-candidate",
+      "canonAuthority": "Александр Лацинник",
+      "derivedFrom": [
+        "TZAR-DECLARATION-001",
+        "TZAR-AXIOM-001",
+        "TZAR-THEOREM-001"
+      ]
+    },
+    {
       "id": "TZAR-PRODUCT-001",
       "type": "product",
       "title": "TZAR Conductance",
       "path": "products/tzar-conductance/index.html",
       "passport": "05-engineering-applications/TZAR-PRODUCT-001.md",
-      "version": "0.6.0",
-      "status": "semantic-audit-beta",
+      "version": "0.7.0",
+      "status": "calibration-beta",
       "derivedFrom": [
         "TZAR-DECLARATION-001",
         "TZAR-AXIOM-001",
@@ -155,7 +178,10 @@
         "long-text-chunking",
         "semantic-web-worker",
         "semantic-draft",
-        "pinned-model-revision"
+        "pinned-model-revision",
+        "blind-author-review",
+        "calibration-corpus",
+        "sealed-calibration-review"
       ]
     }
   ]
