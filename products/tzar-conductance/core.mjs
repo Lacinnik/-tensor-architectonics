@@ -24,6 +24,33 @@ async function digestString(value) {
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+function stableString(value) {
+  if (Array.isArray(value)) return `[${value.map(stableString).join(",")}]`;
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableString(value[key])}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+async function calculateReportSeal(report) {
+  const unsigned = structuredClone(report);
+  delete unsigned.seal;
+  return digestString(stableString(unsigned));
+}
+
+export async function verifyReportSeal(report) {
+  if (!report || typeof report !== "object" || typeof report.seal !== "string") {
+    return { valid: false, reason: "Паспорт не содержит контрольную печать" };
+  }
+  const calculated = await calculateReportSeal(report);
+  return {
+    valid: calculated === report.seal,
+    expected: report.seal,
+    calculated,
+    reason: calculated === report.seal ? "Контрольная печать совпадает" : "Содержимое паспорта изменено",
+  };
+}
+
 export async function fingerprint(invariant) {
   return digestString(canonicalString(invariant));
 }
@@ -81,8 +108,8 @@ export async function verifyPayload(payload) {
     parentHash = item.hash;
   }
   const firstBreak = ledger.find((entry) => !entry.continuous) ?? null;
-  return {
-    schema: "tzar-conductance-report/1.1.0",
+  const report = {
+    schema: "tzar-conductance-report/1.2.0",
     product: "TZAR-PRODUCT-001",
     theorem: "TZAR-THEOREM-001",
     generatedAt: new Date().toISOString(),
@@ -92,7 +119,10 @@ export async function verifyPayload(payload) {
     ledger,
     firstBreak,
     pass: positive.every((item) => item.pass) && negative.every((item) => item.pass),
+    sealAlgorithm: "SHA-256",
   };
+  report.seal = await calculateReportSeal(report);
+  return report;
 }
 
 export function reportMarkdown(report) {
@@ -108,6 +138,7 @@ export function reportMarkdown(report) {
 - Theorem: \`${report.theorem}\`
 - Generated: ${report.generatedAt}
 - Result: **${report.pass ? "PASS" : "FAIL"}**
+- Control seal: \`${report.seal}\`
 
 | Form | Geometry | Control | Result | SHA-256 |
 |---|---|---|---|---|
@@ -120,5 +151,7 @@ ${rows}
 ${ledgerRows}
 
 First break: ${report.firstBreak ? `step ${report.firstBreak.index} — ${report.firstBreak.label}` : "not detected"}.
+
+The control seal confirms report integrity, not the legal identity of its author.
 `;
 }
