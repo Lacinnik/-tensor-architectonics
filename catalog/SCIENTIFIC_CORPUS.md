@@ -38,7 +38,7 @@
 
 ## Цифровые продукты
 
-1. [**TZAR-PRODUCT-001 — «TZAR Conductance»**](../05-engineering-applications/TZAR-PRODUCT-001.md) — версия `0.1.0`, статус `mvp`; рабочая форма: [browser application](../products/tzar-conductance/).
+1. [**TZAR-PRODUCT-001 — «TZAR Conductance»**](../05-engineering-applications/TZAR-PRODUCT-001.md) — версия `0.2.0`, статус `mvp`; рабочая форма: [browser application](../products/tzar-conductance/).
 
 ## Принцип публикации
 
