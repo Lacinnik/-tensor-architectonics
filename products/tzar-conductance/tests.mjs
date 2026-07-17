@@ -4,6 +4,7 @@ import { example } from "./example.mjs";
 import { extractInvariant, verifyPayload, verifyReportSeal } from "./core.mjs";
 import { buildSemanticItems, chunkSemanticText, classifySemantic, cosineSimilarity, detectLogicRisks, inspectAnchors, lexicalDifference, meanNormalizedVector, parseAnchors, SEMANTIC_MODEL_REVISION } from "./semantic.mjs";
 import { buildAuthorReview, calibrationSummary, validateCalibrationCorpus } from "./calibration.mjs";
+import { attachAuthorSignature, generateAuthorKey, restoreAuthorKey, verifyAuthorSignature, verifyKeyRegistration } from "./author-key.mjs";
 
 const report = await verifyPayload(example);
 assert.equal(report.pass, true);
@@ -79,4 +80,22 @@ assert.equal(calibrationSummary(corpus, allDecisions).complete, true);
 assert.equal(calibrationSummary(corpus, allDecisions).agreementRate, 1);
 assert.equal(buildAuthorReview(corpus, allDecisions).status, "author-reviewed");
 
-console.log("TZAR-PRODUCT-001: 58 assertions passed");
+const generatedKey = await generateAuthorKey("test-passphrase-12345", { author: "Test Author", iterations: 1000 });
+assert.equal(generatedKey.privateKey.extractable, false);
+assert.equal(generatedKey.registration.author, "Test Author");
+assert.equal(await verifyKeyRegistration(generatedKey.registration), true);
+assert.equal(generatedKey.backup.encryption.cipher, "AES-256-GCM");
+assert.equal(generatedKey.backup.encryption.iterations, 1000);
+await assert.rejects(() => restoreAuthorKey(generatedKey.backup, "wrong-password-123"), /неверна|повреждена/);
+const restoredKey = await restoreAuthorKey(generatedKey.backup, "test-passphrase-12345");
+assert.equal(restoredKey.privateKey.extractable, false);
+assert.equal(restoredKey.registration.fingerprint, generatedKey.registration.fingerprint);
+const signedReport = await attachAuthorSignature(report, restoredKey.privateKey, restoredKey.registration);
+assert.equal((await verifyReportSeal(signedReport)).valid, true);
+assert.equal((await verifyAuthorSignature(signedReport)).valid, true);
+const signatureTamper = structuredClone(signedReport);
+signatureTamper.seal = "0".repeat(64);
+assert.equal((await verifyAuthorSignature(signatureTamper)).valid, false);
+assert.equal((await verifyReportSeal(signatureTamper)).valid, false);
+
+console.log("TZAR-PRODUCT-001: 70 assertions passed");
