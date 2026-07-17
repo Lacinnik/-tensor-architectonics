@@ -70,5 +70,16 @@
     "canonical",
     "rejected"
   ],
-  "canonAuthority": "Александр Лацинник"
+  "canonAuthority": "Александр Лацинник",
+  "constructs": [
+    {
+      "id": "TZAR-DECLARATION-001",
+      "type": "declaration",
+      "title": "Осевание",
+      "path": "01-declarations/DECLARATION-001-OSEVANIE.md",
+      "version": "1.0.0",
+      "status": "canonical",
+      "canonicalizedAt": "2026-07-17"
+    }
+  ]
 }
