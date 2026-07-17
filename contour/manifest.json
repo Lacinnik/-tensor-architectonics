@@ -144,13 +144,24 @@
       ]
     },
     {
+      "id": "TZAR-AUTHOR-KEY-001",
+      "type": "author-public-key",
+      "title": "Открытый авторский ключ Александра Лацинника",
+      "path": "products/tzar-conductance/author-keys/TZAR-AUTHOR-KEY-001.registration.json",
+      "registry": "products/tzar-conductance/author-keys/registry.json",
+      "algorithm": "ECDSA-P256-SHA256",
+      "fingerprint": "sha256:Ynjlrfr7-2Ce9ck9RrTZgOo6lXcqwcMpUyl_X0t7G1s",
+      "status": "trusted",
+      "trustedAt": "2026-07-17T12:58:06Z"
+    },
+    {
       "id": "TZAR-PRODUCT-001",
       "type": "product",
       "title": "TZAR Conductance",
       "path": "products/tzar-conductance/index.html",
       "passport": "05-engineering-applications/TZAR-PRODUCT-001.md",
-      "version": "0.8.0",
-      "status": "author-key-beta",
+      "version": "0.8.1",
+      "status": "author-key-trusted",
       "derivedFrom": [
         "TZAR-DECLARATION-001",
         "TZAR-AXIOM-001",
@@ -188,7 +199,12 @@
         "public-key-registry",
         "signature-trust-distinction"
       ],
-      "authorKeyRegistry": "products/tzar-conductance/author-keys/registry.json"
+      "authorKey": {
+        "keyId": "TZAR-AUTHOR-KEY-001",
+        "fingerprint": "sha256:Ynjlrfr7-2Ce9ck9RrTZgOo6lXcqwcMpUyl_X0t7G1s",
+        "status": "trusted",
+        "registry": "products/tzar-conductance/author-keys/registry.json"
+      }
     }
   ]
 }
