@@ -11,14 +11,14 @@
   <div class="orb orb-a"></div><div class="orb orb-b"></div>
   <main>
     <header>
-      <div class="brand"><span class="sigil">⊕</span><div><b>TZAR</b><small>PRODUCT 001 · v0.5 SEMANTIC BETA</small></div></div>
+      <div class="brand"><span class="sigil">⊕</span><div><b>TZAR</b><small>PRODUCT 001 · v0.6 SEMANTIC AUDIT</small></div></div>
       <div id="status" class="status" data-tone="idle">Смысловой контур готов</div>
     </header>
 
     <section class="hero">
       <p class="eyebrow">Тензорная Архитектоника · проводимость смысла</p>
-      <h1>Теперь сравниваются<br><em>не только строки.</em></h1>
-      <p class="lead">Введите исходную мысль и её преобразования. Локальная модель оценит смысловую близость, а заданные вами критические опоры не позволят похожему тексту скрыть подмену.</p>
+      <h1>Близость — ещё не<br><em>тождество смысла.</em></h1>
+      <p class="lead">Модель строит предварительную оценку, а отдельный аудит показывает точные опоры, логические маркеры и лексические изменения, которые должен различить человек.</p>
     </section>
 
     <nav class="mode-switch" aria-label="Режим продукта">
@@ -34,7 +34,7 @@
         <label class="field semantic-field anchors-field"><span>Критические опоры · одна точная фраза на строку</span><textarea id="semantic-anchors" placeholder="Фразы, исчезновение которых означает подмену"></textarea></label>
         <div class="forms-title"><div><small>02 · ПРЕОБРАЗОВАНИЯ</small><h2>Варианты выражения</h2></div></div>
         <div id="semantic-variants" class="forms semantic-variants"></div>
-        <div class="local-note"><span>ЛОКАЛЬНО</span><p>Тексты не отправляются на сервер. При первом запуске браузер загрузит квантованную модель и сохранит её в кэше.</p></div>
+        <div class="local-note"><span>ЛОКАЛЬНО</span><p>Анализ идёт в отдельном потоке браузера. При первом запуске загружается около 150 МБ библиотеки и модели; тексты не передаются сервису анализа. Вычисление можно отменить.</p></div>
         <button id="analyze-semantic" class="primary"><span>Провести смысл через контур</span><b>→</b></button>
       </div>
 
@@ -59,7 +59,7 @@
       </div>
     </section>
 
-    <footer><span>SEMANTIC β · SHA-256 · TZAR-PRODUCT-001</span><p>Модельная близость — средство различения, а не доказательство тождества. Пороговые значения требуют предметной калибровки.</p></footer>
+    <footer><span>SEMANTIC AUDIT β · SHA-256 · TZAR-PRODUCT-001</span><p>Коэффициент модели не является процентом сохранённого смысла. Пороговые значения требуют предметной калибровки.</p></footer>
   </main>
   <script type="module" src="./app.mjs"></script>
 </body>
