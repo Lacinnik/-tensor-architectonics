@@ -44,6 +44,10 @@
 
 1. [**TZAR-AUTHOR-KEY-001 — открытый ключ Александра Лацинника**](../products/tzar-conductance/author-keys/) — `ECDSA-P256-SHA256`, статус `trusted`.
 
+## Операционные проверки
+
+1. [**TZAR-CHECK-001 — первая проверка TZAR Conductance 1.0**](../05-engineering-applications/CHECK-001/README.md) — результат `PASS`, восемь из восьми проверок.
+
 ## Цифровые продукты
 
 1. [**TZAR-PRODUCT-001 — «TZAR Conductance»**](../05-engineering-applications/TZAR-PRODUCT-001.md) — версия `1.0.0`, статус `stable`; [релиз 1.0](../products/tzar-conductance/release/RELEASE-1.0.md); рабочая форма: [browser application](../products/tzar-conductance/).
