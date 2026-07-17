@@ -11,7 +11,7 @@
   <div class="orb orb-a"></div><div class="orb orb-b"></div>
   <main>
     <header>
-      <div class="brand"><span class="sigil">⊕</span><div><b>TZAR</b><small>PRODUCT 001 · v0.7 CALIBRATION BETA</small></div></div>
+      <div class="brand"><span class="sigil">⊕</span><div><b>TZAR</b><small>PRODUCT 001 · v0.8 AUTHOR KEY BETA</small></div></div>
       <div id="status" class="status" data-tone="idle">Смысловой контур готов</div>
     </header>
 
@@ -24,6 +24,7 @@
     <nav class="mode-switch" aria-label="Режим продукта">
       <button class="mode active" data-mode="semantic">Смысловой режим <span>β</span></button>
       <button class="mode" data-mode="calibration">Калибровочный корпус <span>12</span></button>
+      <button class="mode" data-mode="author-key">Авторский ключ <span>β</span></button>
       <button class="mode" data-mode="builder">Структурный контур</button>
       <button class="mode" data-mode="json">Профессиональный JSON</button>
     </nav>
@@ -49,6 +50,25 @@
           <button data-label="rupture"><b>Разрыв</b><span>отношение подменено</span></button>
         </div>
         <div class="calibration-navigation"><button id="calibration-prev" class="ghost">← Предыдущий</button><button id="export-calibration" class="ghost" disabled>Экспорт решений</button><button id="calibration-next" class="ghost">Следующий →</button></div>
+      </div>
+
+      <div class="panel input-panel author-key-panel">
+        <div class="panel-head"><div><small>01 · КРИПТОГРАФИЧЕСКОЕ АВТОРСТВО</small><h2>TZAR-AUTHOR-KEY-001</h2></div><div id="key-state" class="calibration-progress">ключ не создан</div></div>
+        <div class="key-warning"><b>Закрытый ключ возникает только здесь</b><p>Он сохраняется как неизвлекаемый ключ браузера. Единственный переносимый экземпляр — резервная копия, зашифрованная твоей кодовой фразой.</p></div>
+        <div id="key-create-form" class="key-create-form">
+          <label class="field"><span>Кодовая фраза · минимум 12 символов</span><input id="key-passphrase" type="password" autocomplete="new-password" placeholder="Не сохраняется продуктом"></label>
+          <label class="field"><span>Повтор кодовой фразы</span><input id="key-passphrase-repeat" type="password" autocomplete="new-password" placeholder="Повторите фразу"></label>
+          <div class="key-create-actions"><button id="generate-author-key" class="primary"><span>Создать авторский ключ</span><b>◇</b></button><button id="restore-author-key" class="ghost">Восстановить из копии</button><input id="key-backup-file" type="file" accept=".json,application/json" hidden></div>
+        </div>
+        <div id="key-details" class="key-details"><div class="empty">Авторский ключ ещё не создан в этом браузере.</div></div>
+        <div class="key-actions">
+          <button id="export-key-registration" class="ghost" disabled>Открытая регистрация</button>
+          <button id="sign-passport" class="ghost" disabled>Подписать паспорт</button>
+          <button id="verify-signature" class="ghost">Проверить подпись</button>
+          <input id="sign-passport-file" type="file" accept=".json,application/json" hidden>
+          <input id="verify-signature-file" type="file" accept=".json,application/json" hidden>
+        </div>
+        <div class="trust-boundary"><span>СЛЕДУЮЩАЯ СТУПЕНЬ</span><p>После создания передай мне файл открытой регистрации. Его публикация в репозитории привяжет отпечаток ключа к автору ТзАр. До публикации подпись проверяема криптографически, но ключ ещё не является доверенным ключом репозитория.</p></div>
       </div>
 
       <div class="panel input-panel builder-panel">
