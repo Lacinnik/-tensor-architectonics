@@ -35,6 +35,7 @@ function stableString(value) {
 async function calculateReportSeal(report) {
   const unsigned = structuredClone(report);
   delete unsigned.seal;
+  delete unsigned.authorSignature;
   return digestString(stableString(unsigned));
 }
 
