@@ -1,0 +1,74 @@
+{
+  "schema": "tzar-resonance-contour/1.0.0",
+  "title": "Тензорная Архитектоника",
+  "author": "Александр Лацинник",
+  "axis": {
+    "term": "осевание",
+    "definition": "Приведение субъектной структуры в состояние, при котором супра становится сущей."
+  },
+  "nodes": [
+    {
+      "id": "declarations",
+      "path": "01-declarations",
+      "role": "source"
+    },
+    {
+      "id": "axioms",
+      "path": "02-axioms",
+      "role": "invariants"
+    },
+    {
+      "id": "theory",
+      "path": "03-theory",
+      "role": "models"
+    },
+    {
+      "id": "mathematics",
+      "path": "04-mathematical-apparatus",
+      "role": "formalization"
+    },
+    {
+      "id": "engineering",
+      "path": "05-engineering-applications",
+      "role": "verification"
+    }
+  ],
+  "flow": [
+    "source",
+    "distinction",
+    "formalization",
+    "verification",
+    "relation",
+    "application",
+    "feedback"
+  ],
+  "metrics": [
+    "alpha",
+    "IY",
+    "Cm",
+    "Q",
+    "T"
+  ],
+  "metricScale": [
+    0,
+    0.25,
+    0.5,
+    0.75,
+    1
+  ],
+  "geometries": [
+    "Euclid",
+    "Lobachevsky",
+    "Riemann",
+    "Projective",
+    "Supra"
+  ],
+  "statuses": [
+    "draft",
+    "candidate",
+    "verified",
+    "canonical",
+    "rejected"
+  ],
+  "canonAuthority": "Александр Лацинник"
+}
