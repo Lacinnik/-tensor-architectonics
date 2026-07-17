@@ -1,7 +1,6 @@
 import { reportMarkdown, sealReport, verifyPayload, verifyReportSeal } from "./core.mjs";
 import { example } from "./example.mjs";
-import { buildSemanticItems, parseAnchors, semanticReportMarkdown, SEMANTIC_MODEL, SEMANTIC_THRESHOLDS } from "./semantic.mjs";
-import { embedSemanticTexts } from "./semantic-runtime.mjs";
+import { buildSemanticItems, parseAnchors, semanticReportMarkdown, SEMANTIC_MODEL, SEMANTIC_MODEL_REVISION, SEMANTIC_THRESHOLDS } from "./semantic.mjs";
 
 const fields = ["constructId", "author", "axisTerm", "axisDefinition", "version", "status"];
 const labels = { constructId:"ID конструкта",author:"Автор",axisTerm:"Осевой термин",axisDefinition:"Осевое определение",version:"Версия",status:"Статус" };
@@ -11,6 +10,8 @@ const input=$("#payload"), result=$("#result"), status=$("#status"), formsHost=$
 const exportJson=$("#export-json"), exportMarkdown=$("#export-markdown"), passportFile=$("#passport-file"), passportStatus=$("#passport-status");
 let currentReport=null;
 let currentReportKind="structural";
+let semanticWorker=null;
+let cancelSemanticJob=null;
 
 const semanticExample={
   source:"Цифровой продукт проводит явно заданный инвариант через различные формы представления и обнаруживает его подмену.",
@@ -71,15 +72,28 @@ function render(report){
 function semanticVariantCard(variant={}){
   const card=document.createElement("article");card.className="form-card semantic-card";
   card.innerHTML=`<div class="form-card-head"><input class="form-label" value="${escapeHtml(variant.label||"Новый вариант")}" aria-label="Название варианта"><button class="remove ghost" title="Удалить">×</button></div><label class="field compact"><span>Преобразованный текст</span><textarea class="variant-text" placeholder="Выразите исходную мысль в другой форме">${escapeHtml(variant.text||"")}</textarea></label>`;
-  card.querySelector(".remove").onclick=()=>card.remove();
+  card.querySelector(".remove").onclick=()=>{card.remove();saveSemanticDraft()};
+  card.querySelectorAll("input,textarea").forEach(node=>node.addEventListener("input",saveSemanticDraft));
   $("#semantic-variants").append(card);
 }
 
-function loadSemanticExample(){
-  $("#semantic-source").value=semanticExample.source;
-  $("#semantic-anchors").value=semanticExample.anchors.join("\n");
+function loadSemantic(data){
+  $("#semantic-source").value=data.source||"";
+  $("#semantic-anchors").value=(data.anchors||[]).join("\n");
   $("#semantic-variants").innerHTML="";
-  semanticExample.variants.forEach(semanticVariantCard);
+  (data.variants||[]).forEach(semanticVariantCard);
+}
+
+function semanticDraft(){
+  return {source:$("#semantic-source").value,anchors:parseAnchors($("#semantic-anchors").value),variants:[...document.querySelectorAll(".semantic-card")].map(card=>({label:card.querySelector(".form-label").value,text:card.querySelector(".variant-text").value}))};
+}
+
+function saveSemanticDraft(){
+  try{localStorage.setItem("tzar-product-001-semantic-draft",JSON.stringify(semanticDraft()))}catch{}
+}
+
+function loadSemanticExample(){
+  loadSemantic(semanticExample);saveSemanticDraft();
 }
 
 function semanticPayload(){
@@ -94,29 +108,50 @@ function semanticPayload(){
 
 function renderSemantic(report){
   const counts=report.items.reduce((acc,item)=>{acc[item.verdict.code]=(acc[item.verdict.code]||0)+1;return acc},{});
-  result.innerHTML=`<div class="summary semantic-summary"><span class="summary-mark">≈</span><div><small>Смысловой контур · ${report.items.length} преобразования</small><strong>${counts["critical-break"]||counts.rupture?"ОБНАРУЖЕНО РАЗЛИЧИЕ":"КОНТУР ПРОВЕДЁН"}</strong><code class="seal" title="${report.seal}">печать · ${report.seal.slice(0,16)}…</code></div></div>
-  <div class="calibration"><span>КАЛИБРОВКА β</span><p>сохранение ≥ ${Math.round(report.thresholds.preserved*100)}% · различение ≥ ${Math.round(report.thresholds.review*100)}% · ниже — разрыв</p></div>
-  <div class="semantic-results">${report.items.map((item,index)=>`<article class="semantic-result ${item.verdict.tone}"><div class="score"><span>${String(index+1).padStart(2,"0")}</span><strong>${(item.similarity*100).toFixed(1)}<small>%</small></strong></div><div class="semantic-result-body"><div class="verdict-row"><h3>${escapeHtml(item.label)}</h3><b>${item.verdict.label}</b></div><p>${escapeHtml(item.verdict.explanation)}</p><div class="meter"><i style="width:${Math.max(0,item.similarity*100)}%"></i></div><div class="anchor-map"><span>Опоры ${item.anchors.present.length}/${item.anchors.required.length}</span>${item.anchors.missing.map(anchor=>`<code>утрачено: ${escapeHtml(anchor)}</code>`).join("")}</div></div></article>`).join("")}</div>
-  <div class="method-note"><b>Что измерено</b><p>Многоязычная модель сравнила координаты смысла; критические опоры проверены как строгие фразы. Это диагностическая оценка, не научное доказательство тождества.</p></div>`;
+  const hasSignals=counts["critical-break"]||counts.rupture||counts["logical-risk"];
+  const totalChunks=report.chunkCounts.reduce((sum,count)=>sum+count,0);
+  result.innerHTML=`<div class="summary semantic-summary"><span class="summary-mark">≈</span><div><small>${report.items.length} преобразования · ${totalChunks} смысловых блоков</small><strong>${hasSignals?"ЕСТЬ СИГНАЛЫ ДЛЯ ПРОВЕРКИ":"ОЦЕНКА ПОСТРОЕНА"}</strong><code class="seal" title="${report.seal}">печать · ${report.seal.slice(0,16)}…</code></div></div>
+  <div class="calibration"><span>ОПЕРАЦИОННАЯ КАЛИБРОВКА β</span><p>cos ≥ ${report.thresholds.preserved.toFixed(2)} · зона различения ≥ ${report.thresholds.review.toFixed(2)} · не является процентом смысла</p></div>
+  <div class="semantic-results">${report.items.map((item,index)=>`<article class="semantic-result ${item.verdict.tone}"><div class="score"><span>${String(index+1).padStart(2,"0")}</span><strong>${item.similarity.toFixed(3)}<small>cos</small></strong></div><div class="semantic-result-body"><div class="verdict-row"><h3>${escapeHtml(item.label)}</h3><b>${item.verdict.label}</b></div><p>${escapeHtml(item.verdict.explanation)}</p><div class="meter"><i style="width:${Math.max(0,item.similarity*100)}%"></i></div><div class="anchor-map"><span>Точные опоры ${item.anchors.present.length}/${item.anchors.required.length}</span>${item.anchors.missing.map(anchor=>`<code>не найдено: ${escapeHtml(anchor)}</code>`).join("")}</div>${item.logicRisks.length?`<div class="logic-map"><b>Логические предупреждения</b>${item.logicRisks.map(risk=>`<code class="${risk.severity}">${escapeHtml(risk.label)} · ${risk.explanation}</code>`).join("")}</div>`:""}<div class="lexical-map"><span>Лексическая карта</span>${item.lexical.removed.length?`<code class="removed">исчезли: ${escapeHtml(item.lexical.removed.join(", "))}</code>`:""}${item.lexical.added.length?`<code class="added">появились: ${escapeHtml(item.lexical.added.join(", "))}</code>`:""}</div></div></article>`).join("")}</div>
+  <div class="method-note"><b>Граница вывода</b><p>Коэффициент показывает близость векторов конкретной модели, а не долю сохранённого смысла. Логические предупреждения и лексическая карта помогают человеку проверить причину результата.</p></div>`;
+}
+
+function analyzeInWorker(texts,onProgress){
+  return new Promise((resolve,reject)=>{
+    const worker=new Worker(new URL("./semantic-worker.mjs",import.meta.url),{type:"module"});
+    semanticWorker=worker;
+    cancelSemanticJob=()=>{worker.terminate();semanticWorker=null;cancelSemanticJob=null;const error=new Error("Вычисление отменено пользователем");error.name="AbortError";reject(error)};
+    worker.onmessage=(event)=>{
+      if(event.data?.type==="progress")onProgress(event.data.message);
+      if(event.data?.type==="result"){worker.terminate();semanticWorker=null;cancelSemanticJob=null;resolve({vectors:event.data.vectors,chunkCounts:event.data.chunkCounts})}
+      if(event.data?.type==="error"){worker.terminate();semanticWorker=null;cancelSemanticJob=null;reject(new Error(event.data.message))}
+    };
+    worker.onerror=(event)=>{worker.terminate();semanticWorker=null;cancelSemanticJob=null;reject(new Error(event.message||"Фоновый поток модели завершился с ошибкой"))};
+    worker.postMessage({type:"analyze",texts});
+  });
 }
 
 async function runSemantic(){
+  const button=$("#analyze-semantic");
   try{
     const payload=semanticPayload();
+    saveSemanticDraft();
+    button.dataset.running="true";button.querySelector("span").textContent="Отменить вычисление";button.querySelector("b").textContent="×";
     setStatus("Подготовка модели…","work");
     result.innerHTML='<div class="model-loading"><span></span><strong>Запуск локального смыслового ядра</strong><p id="model-progress">Первая загрузка может занять некоторое время.</p></div>';
-    const vectors=await embedSemanticTexts([payload.source,...payload.variants.map(item=>item.text)],message=>{const node=$("#model-progress");if(node)node.textContent=message;setStatus(message,"work")});
+    const embedded=await analyzeInWorker([payload.source,...payload.variants.map(item=>item.text)],message=>{const node=$("#model-progress");if(node)node.textContent=message;setStatus(message,"work")});
+    const vectors=embedded.vectors;
     const items=buildSemanticItems(payload.source,payload.variants,vectors,payload.anchors,SEMANTIC_THRESHOLDS);
-    currentReport=await sealReport({schema:"tzar-semantic-report/0.1.0",product:"TZAR-PRODUCT-001",mode:"semantic-beta",model:SEMANTIC_MODEL,generatedAt:new Date().toISOString(),source:payload.source,anchors:payload.anchors,thresholds:SEMANTIC_THRESHOLDS,items});
+    currentReport=await sealReport({schema:"tzar-semantic-report/0.2.0",product:"TZAR-PRODUCT-001",mode:"semantic-audit-beta",model:SEMANTIC_MODEL,modelRevision:SEMANTIC_MODEL_REVISION,transformers:"4.0.1",generatedAt:new Date().toISOString(),source:payload.source,anchors:payload.anchors,thresholds:SEMANTIC_THRESHOLDS,chunkCounts:embedded.chunkCounts,items});
     currentReportKind="semantic";
     renderSemantic(currentReport);enableExports();
-    const hasBreak=items.some(item=>item.verdict.tone==="fail");
-    setStatus(hasBreak?"Различие обнаружено":"Смысл проведён",hasBreak?"fail":"pass");
+    const hasSignal=items.some(item=>item.verdict.tone!=="pass");
+    setStatus(hasSignal?"Нужна ручная проверка":"Высокая модельная близость",hasSignal?"review":"pass");
   }catch(error){
     currentReport=null;exportJson.disabled=true;exportMarkdown.disabled=true;
-    result.innerHTML=`<div class="error"><strong>Смысловая проверка не выполнена</strong><p>${escapeHtml(error.message)}</p><p>Проверьте соединение при первой загрузке модели и повторите запуск.</p></div>`;
-    setStatus("Смысловой контур недоступен","fail");
-  }
+    if(error.name==="AbortError"){result.innerHTML='<div class="empty">Вычисление отменено. Введённые тексты сохранены в браузере.</div>';setStatus("Вычисление отменено","idle")}
+    else{result.innerHTML=`<div class="error"><strong>Смысловая проверка не выполнена</strong><p>${escapeHtml(error.message)}</p><p>Проверьте соединение при первой загрузке модели и повторите запуск.</p></div>`;setStatus("Смысловой контур недоступен","fail")}
+  }finally{button.dataset.running="false";button.querySelector("span").textContent="Провести смысл через контур";button.querySelector("b").textContent="→"}
 }
 async function run(payload=payloadFromBuilder()){
   try{setStatus("Проверка…","work");currentReport=await verifyPayload(payload);currentReportKind="structural";render(currentReport);enableExports();input.value=JSON.stringify(payload,null,2);saveDraft();setStatus(currentReport.pass?"Контур проводим":"Контур разорван",currentReport.pass?"pass":"fail")}
@@ -125,9 +160,9 @@ async function run(payload=payloadFromBuilder()){
 function switchMode(mode){document.body.dataset.mode=mode;document.querySelectorAll(".mode").forEach(b=>b.classList.toggle("active",b.dataset.mode===mode));$("#output-title").textContent=mode==="semantic"?"Карта смысловой проводимости":"Карта структурной проводимости";if(mode==="json")input.value=JSON.stringify(payloadFromBuilder(),null,2)}
 
 $("#verify").onclick=()=>run();
-$("#analyze-semantic").onclick=()=>runSemantic();
+$("#analyze-semantic").onclick=()=>cancelSemanticJob?cancelSemanticJob():runSemantic();
 $("#semantic-example").onclick=()=>loadSemanticExample();
-$("#add-variant").onclick=()=>semanticVariantCard();
+$("#add-variant").onclick=()=>{semanticVariantCard();saveSemanticDraft()};
 $("#verify-json").onclick=()=>{try{const payload=JSON.parse(input.value);loadBuilder(payload);run(payload)}catch(error){setStatus("Ошибка JSON","fail");result.innerHTML=`<div class="error"><strong>JSON не прочитан</strong><p>${escapeHtml(error.message)}</p></div>`}};
 $("#example").onclick=()=>{loadBuilder(structuredClone(example));run()};
 $("#reset").onclick=()=>{loadBuilder(structuredClone(example));setStatus("Пример восстановлен")};
@@ -151,10 +186,13 @@ document.querySelectorAll(".mode").forEach(button=>button.onclick=()=>switchMode
 exportJson.onclick=()=>download(currentReportKind==="semantic"?"tzar-semantic-report.json":"tzar-conductance-report.json",JSON.stringify(currentReport,null,2),"application/json");
 exportMarkdown.onclick=()=>download(currentReportKind==="semantic"?"tzar-semantic-report.md":"tzar-conductance-report.md",currentReportKind==="semantic"?semanticReportMarkdown(currentReport):reportMarkdown(currentReport),"text/markdown");
 sourceHost.addEventListener("input",saveDraft);
+$("#semantic-source").addEventListener("input",saveSemanticDraft);
+$("#semantic-anchors").addEventListener("input",saveSemanticDraft);
 
 let initial=example;try{const saved=localStorage.getItem("tzar-product-001-draft");if(saved)initial=JSON.parse(saved)}catch{}
 loadBuilder(structuredClone(initial));
-loadSemanticExample();
+let initialSemantic=semanticExample;try{const saved=localStorage.getItem("tzar-product-001-semantic-draft");if(saved)initialSemantic=JSON.parse(saved)}catch{}
+loadSemantic(initialSemantic);
 switchMode("semantic");
 currentReport=null;exportJson.disabled=true;exportMarkdown.disabled=true;
 result.innerHTML='<div class="empty">Исходная мысль и три преобразования уже загружены. Запустите смысловую проверку.</div>';
