@@ -1,0 +1,29 @@
+name: TZAR Experiment 001
+
+on:
+  push:
+    paths:
+      - "01-declarations/DECLARATION-001-OSEVANIE.md"
+      - "03-theory/THEOREM-001-TRANSITIVE-CONDUCTANCE.md"
+      - "05-engineering-applications/EXPERIMENT-001/**"
+      - ".github/workflows/experiment-001.yml"
+  pull_request:
+    paths:
+      - "01-declarations/DECLARATION-001-OSEVANIE.md"
+      - "03-theory/THEOREM-001-TRANSITIVE-CONDUCTANCE.md"
+      - "05-engineering-applications/EXPERIMENT-001/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Verify transitive conductance
+        run: node 05-engineering-applications/EXPERIMENT-001/verify.mjs
