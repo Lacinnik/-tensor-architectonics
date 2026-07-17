@@ -1,5 +1,15 @@
 export const SEMANTIC_MODEL = "Xenova/paraphrase-multilingual-MiniLM-L12-v2";
+export const SEMANTIC_MODEL_REVISION = "2c4055b12046f11709e9df2c122e59ffbdc2f900";
 export const SEMANTIC_THRESHOLDS = Object.freeze({ preserved: 0.78, review: 0.6 });
+
+const STOP_WORDS = new Set("это как при для или что чем над под его её их она они оно этот эта эти быть был была были через между после перед уже ещё где когда который которая которые такой такая также только очень одной один без из от до по на в во и а но с со у к ко о об не ни ли же".split(" "));
+const LOGIC_GROUPS = [
+  { code: "negation", label: "Изменение отрицания", pattern: /(?<!\p{L})(?:не|ни|нет|без|невозмож\p{L}*|отсутств\p{L}*)(?!\p{L})/giu, severity: "critical" },
+  { code: "possibility", label: "Изменение возможности или гипотезы", pattern: /(?<!\p{L})(?:может|могут|возможно|вероятно|предполож\p{L}*|гипотез\p{L}*)(?!\p{L})/giu, severity: "warning" },
+  { code: "necessity", label: "Изменение необходимости", pattern: /(?<!\p{L})(?:долж\p{L}*|необходим\p{L}*|обязательн\p{L}*)(?!\p{L})/giu, severity: "warning" },
+  { code: "proof-status", label: "Изменение статуса доказанности", pattern: /(?<!\p{L})(?:доказ\p{L}*|истин\p{L}*|установлен\p{L}*|подтвержд\p{L}*|канонич\p{L}*|факт\p{L}*)(?!\p{L})/giu, severity: "critical" },
+  { code: "observation", label: "Изменение статуса наблюдения", pattern: /(?<!\p{L})(?:наблюда\p{L}*|измер\p{L}*|эксперимент\p{L}*)(?!\p{L})/giu, severity: "warning" },
+];
 
 export function normalizeSemanticText(value) {
   return String(value ?? "")
@@ -27,6 +37,75 @@ export function inspectAnchors(text, anchors) {
   };
 }
 
+function markerCount(text, pattern) {
+  return normalizeSemanticText(text).match(pattern)?.length ?? 0;
+}
+
+export function detectLogicRisks(source, variant) {
+  return LOGIC_GROUPS.flatMap((group) => {
+    const before = markerCount(source, group.pattern);
+    const after = markerCount(variant, group.pattern);
+    return before === after ? [] : [{
+      code: group.code,
+      label: group.label,
+      severity: group.severity,
+      before,
+      after,
+      explanation: `${before} → ${after} маркеров`,
+    }];
+  });
+}
+
+function contentTokens(text) {
+  return [...new Set((normalizeSemanticText(text).match(/[\p{L}\p{N}-]+/gu) ?? [])
+    .filter((token) => token.length > 2 && !STOP_WORDS.has(token)))];
+}
+
+export function lexicalDifference(source, variant, limit = 8) {
+  const before = contentTokens(source);
+  const after = contentTokens(variant);
+  const beforeSet = new Set(before);
+  const afterSet = new Set(after);
+  return {
+    removed: before.filter((token) => !afterSet.has(token)).slice(0, limit),
+    added: after.filter((token) => !beforeSet.has(token)).slice(0, limit),
+  };
+}
+
+export function chunkSemanticText(text, maxCharacters = 900) {
+  const normalized = String(text ?? "").replace(/[\s\u00a0]+/g, " ").trim();
+  if (!normalized) return [];
+  const sentences = normalized.match(/[^.!?…]+[.!?…]+|[^.!?…]+$/gu) ?? [normalized];
+  const chunks = [];
+  let current = "";
+  const pushCurrent = () => { if (current) chunks.push(current.trim()); current = ""; };
+  for (const sentence of sentences) {
+    const clean = sentence.trim();
+    if (clean.length > maxCharacters) {
+      pushCurrent();
+      for (let offset = 0; offset < clean.length; offset += maxCharacters) chunks.push(clean.slice(offset, offset + maxCharacters).trim());
+    } else if (!current || current.length + clean.length + 1 <= maxCharacters) {
+      current = `${current} ${clean}`.trim();
+    } else {
+      pushCurrent();
+      current = clean;
+    }
+  }
+  pushCurrent();
+  return chunks;
+}
+
+export function meanNormalizedVector(vectors) {
+  if (!Array.isArray(vectors) || !vectors.length) throw new Error("Нечего объединять в смысловой вектор");
+  const width = vectors[0].length;
+  if (!width || vectors.some((vector) => vector.length !== width)) throw new Error("Размерности смысловых векторов различаются");
+  const mean = Array(width).fill(0);
+  for (const vector of vectors) for (let index = 0; index < width; index += 1) mean[index] += vector[index] / vectors.length;
+  const norm = Math.sqrt(mean.reduce((sum, value) => sum + value ** 2, 0));
+  if (!norm) throw new Error("Получен нулевой смысловой вектор");
+  return mean.map((value) => value / norm);
+}
+
 export function cosineSimilarity(left, right) {
   if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length || left.length === 0) {
     throw new Error("Векторы должны иметь одинаковую ненулевую длину");
@@ -50,32 +129,32 @@ export function classifySemantic(similarity, anchorInspection, thresholds = SEMA
   if (anchorInspection.missing.length) {
     return {
       code: "critical-break",
-      label: "КРИТИЧЕСКИЙ РАЗРЫВ",
+      label: "НАРУШЕНА ТОЧНАЯ ОПОРА",
       tone: "fail",
-      explanation: "Утрачена хотя бы одна обязательная смысловая опора.",
+      explanation: "Не найдена хотя бы одна обязательная точная фраза.",
     };
   }
   if (similarity >= thresholds.preserved) {
     return {
       code: "preserved",
-      label: "СМЫСЛ СОХРАНЁН",
+      label: "ВЫСОКАЯ МОДЕЛЬНАЯ БЛИЗОСТЬ",
       tone: "pass",
-      explanation: "Опоры сохранены, модельная близость находится в верхнем диапазоне.",
+      explanation: "Точные опоры найдены; коэффициент модели находится в верхнем диапазоне.",
     };
   }
   if (similarity >= thresholds.review) {
     return {
       code: "review",
-      label: "ТРЕБУЕТ РАЗЛИЧЕНИЯ",
+      label: "ЗОНА РУЧНОГО РАЗЛИЧЕНИЯ",
       tone: "review",
-      explanation: "Опоры сохранены, но преобразование заметно изменило смысловое окружение.",
+      explanation: "Точные опоры найдены, но модельная близость неоднозначна.",
     };
   }
   return {
     code: "rupture",
-    label: "СМЫСЛОВОЙ РАЗРЫВ",
+    label: "НИЗКАЯ МОДЕЛЬНАЯ БЛИЗОСТЬ",
     tone: "fail",
-    explanation: "Даже при сохранённых опорах модель обнаружила низкую смысловую близость.",
+    explanation: "Точные опоры найдены, но коэффициент модели находится в нижнем диапазоне.",
   };
 }
 
@@ -84,25 +163,37 @@ export function buildSemanticItems(source, variants, vectors, anchors, threshold
   return variants.map((variant, index) => {
     const similarity = cosineSimilarity(vectors[0], vectors[index + 1]);
     const anchorInspection = inspectAnchors(variant.text, anchors);
+    const logicRisks = detectLogicRisks(source, variant.text);
+    let verdict = classifySemantic(similarity, anchorInspection, thresholds);
+    if (verdict.code === "preserved" && logicRisks.some((risk) => risk.severity === "critical")) {
+      verdict = {
+        code: "logical-risk",
+        label: "ЛОГИЧЕСКИЙ РИСК",
+        tone: "review",
+        explanation: "Высокая модельная близость не снимает обнаруженного логического предупреждения.",
+      };
+    }
     return {
       label: variant.label || `Вариант ${index + 1}`,
       text: variant.text,
       similarity,
       anchors: anchorInspection,
-      verdict: classifySemantic(similarity, anchorInspection, thresholds),
+      logicRisks,
+      lexical: lexicalDifference(source, variant.text),
+      verdict,
     };
   });
 }
 
 export function semanticReportMarkdown(report) {
   const rows = report.items.map((item) =>
-    `| ${item.label} | ${(item.similarity * 100).toFixed(1)}% | ${(item.anchors.coverage * 100).toFixed(0)}% | ${item.verdict.label} |`,
+    `| ${item.label} | ${item.similarity.toFixed(3)} | ${item.anchors.present.length}/${item.anchors.required.length} | ${item.logicRisks.length} | ${item.verdict.label} |`,
   ).join("\n");
   return `# TZAR Semantic Conductance Report
 
 - Product: \`${report.product}\`
 - Mode: semantic beta
-- Model: \`${report.model}\`
+- Model: \`${report.model}@${report.modelRevision}\`
 - Generated: ${report.generatedAt}
 - Control seal: \`${report.seal}\`
 
@@ -114,10 +205,10 @@ ${report.source}
 
 ${report.anchors.length ? report.anchors.map((anchor) => `- ${anchor}`).join("\n") : "Not specified"}
 
-| Variant | Similarity | Anchor coverage | Verdict |
-|---|---:|---:|---|
+| Variant | Cosine coefficient | Exact anchors | Logic warnings | Verdict |
+|---|---:|---:|---:|---|
 ${rows}
 
-Thresholds are operational calibration values, not a scientific proof. A model score is an aid to human distinction; critical anchors are strict user-defined constraints.
+Thresholds are operational calibration values, not a scientific proof or a percentage of preserved meaning. A model coefficient is an aid to human distinction; critical anchors are strict user-defined phrases.
 `;
 }
