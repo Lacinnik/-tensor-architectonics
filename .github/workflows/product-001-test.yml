@@ -1,0 +1,29 @@
+name: TZAR Product 001 Tests
+
+on:
+  push:
+    paths:
+      - "products/tzar-conductance/**"
+      - ".github/workflows/product-001-test.yml"
+  pull_request:
+    paths:
+      - "products/tzar-conductance/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Check modules
+        run: |
+          node --check products/tzar-conductance/core.mjs
+          node --check products/tzar-conductance/app.mjs
+      - name: Run product tests
+        run: node products/tzar-conductance/tests.mjs
