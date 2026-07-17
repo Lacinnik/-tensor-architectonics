@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { example } from "./example.mjs";
 import { extractInvariant, verifyPayload, verifyReportSeal } from "./core.mjs";
 import { buildSemanticItems, chunkSemanticText, classifySemantic, cosineSimilarity, detectLogicRisks, inspectAnchors, lexicalDifference, meanNormalizedVector, parseAnchors, SEMANTIC_MODEL_REVISION } from "./semantic.mjs";
+import { buildAuthorReview, calibrationSummary, validateCalibrationCorpus } from "./calibration.mjs";
 
 const report = await verifyPayload(example);
 assert.equal(report.pass, true);
@@ -60,4 +62,21 @@ assert.equal(logicalItem[0].verdict.code, "logical-risk");
 assert.equal(logicalItem[0].logicRisks[0].code, "negation");
 assert.equal(SEMANTIC_MODEL_REVISION.length, 40);
 
-console.log("TZAR-PRODUCT-001: 46 assertions passed");
+const corpus = JSON.parse(await readFile(new URL("./calibration/corpus.v1.json", import.meta.url), "utf8"));
+const corpusCheck = validateCalibrationCorpus(corpus);
+assert.equal(corpusCheck.valid, true);
+assert.equal(corpusCheck.caseCount, 12);
+assert.equal(new Set(corpus.cases.map((item) => item.id)).size, 12);
+assert.equal(corpus.cases.filter((item) => item.candidateLabel === "preserved").length, 4);
+assert.equal(corpus.cases.filter((item) => item.candidateLabel === "review").length, 4);
+assert.equal(corpus.cases.filter((item) => item.candidateLabel === "rupture").length, 4);
+const twoDecisions = { [corpus.cases[0].id]: "preserved", [corpus.cases[1].id]: "rupture" };
+assert.equal(calibrationSummary(corpus, twoDecisions).reviewed, 2);
+assert.equal(calibrationSummary(corpus, twoDecisions).complete, false);
+assert.equal(buildAuthorReview(corpus, twoDecisions).status, "author-review-draft");
+const allDecisions = Object.fromEntries(corpus.cases.map((item) => [item.id, item.candidateLabel]));
+assert.equal(calibrationSummary(corpus, allDecisions).complete, true);
+assert.equal(calibrationSummary(corpus, allDecisions).agreementRate, 1);
+assert.equal(buildAuthorReview(corpus, allDecisions).status, "author-reviewed");
+
+console.log("TZAR-PRODUCT-001: 58 assertions passed");
