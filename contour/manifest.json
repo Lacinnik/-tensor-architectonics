@@ -222,6 +222,18 @@
         "authorLayer": "conductance-authority-within-tzar",
         "thresholdStatus": "operational-not-author-calibrated"
       }
+    },
+    {
+      "id": "TZAR-CHECK-001",
+      "type": "operational-check",
+      "title": "Первая операционная проверка TZAR Conductance 1.0",
+      "path": "05-engineering-applications/CHECK-001/README.md",
+      "passport": "products/tzar-conductance/checks/TZAR-CHECK-001.json",
+      "target": "TZAR-PRODUCT-001@1.0.0",
+      "result": "PASS",
+      "checkCount": 8,
+      "executedAt": "2026-07-17T13:31:57Z",
+      "seal": "c2e944497fd6d93dd2f776508ffc3ac6926474df32652deb764fff96f6d90c1b"
     }
   ]
 }
