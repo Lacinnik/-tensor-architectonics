@@ -1,6 +1,7 @@
 import { reportMarkdown, sealReport, verifyPayload, verifyReportSeal } from "./core.mjs";
 import { example } from "./example.mjs";
 import { buildSemanticItems, parseAnchors, semanticReportMarkdown, SEMANTIC_MODEL, SEMANTIC_MODEL_REVISION, SEMANTIC_THRESHOLDS } from "./semantic.mjs";
+import { buildAuthorReview, calibrationSummary, validateCalibrationCorpus } from "./calibration.mjs";
 
 const fields = ["constructId", "author", "axisTerm", "axisDefinition", "version", "status"];
 const labels = { constructId:"ID конструкта",author:"Автор",axisTerm:"Осевой термин",axisDefinition:"Осевое определение",version:"Версия",status:"Статус" };
@@ -12,6 +13,10 @@ let currentReport=null;
 let currentReportKind="structural";
 let semanticWorker=null;
 let cancelSemanticJob=null;
+let calibrationCorpus=null;
+let calibrationIndex=0;
+let calibrationDecisions={};
+const calibrationLabels={preserved:"ПРОВОДИМО",review:"ТРЕБУЕТ РАЗЛИЧЕНИЯ",rupture:"РАЗРЫВ"};
 
 const semanticExample={
   source:"Цифровой продукт проводит явно заданный инвариант через различные формы представления и обнаруживает его подмену.",
@@ -116,6 +121,51 @@ function renderSemantic(report){
   <div class="method-note"><b>Граница вывода</b><p>Коэффициент показывает близость векторов конкретной модели, а не долю сохранённого смысла. Логические предупреждения и лексическая карта помогают человеку проверить причину результата.</p></div>`;
 }
 
+function saveCalibrationDecisions(){
+  try{localStorage.setItem("tzar-calibration-001-decisions",JSON.stringify(calibrationDecisions))}catch{}
+}
+
+function renderCalibrationOutput(){
+  if(!calibrationCorpus)return;
+  const summary=calibrationSummary(calibrationCorpus,calibrationDecisions);
+  const rate=summary.agreementRate===null?"—":`${Math.round(summary.agreementRate*100)}%`;
+  result.innerHTML=`<div class="summary calibration-summary"><span class="summary-mark">${summary.reviewed}</span><div><small>Авторское различение</small><strong>${summary.complete?"КОРПУС РАЗМЕЧЕН":"ОБЗОР ПРОДОЛЖАЕТСЯ"}</strong></div></div><div class="corpus-stats"><div><span>Рассмотрено</span><b>${summary.reviewed} / ${summary.total}</b></div><div><span>Совпадение с кандидатом</span><b>${rate}</b></div><div><span>Проводимо</span><b>${summary.labels.preserved}</b></div><div><span>Различить</span><b>${summary.labels.review}</b></div><div><span>Разрыв</span><b>${summary.labels.rupture}</b></div></div><div class="method-note"><b>${summary.complete?"Следующий научный ход":"Почему метка скрыта"}</b><p>${summary.complete?"Теперь решения можно экспортировать, зафиксировать как авторскую ревизию и использовать для прогона модели и расчёта порогов.":"Независимый выбор не позволяет первичной разметке ассистента подменить авторское различение."}</p></div>`;
+}
+
+function renderCalibrationCase(){
+  if(!calibrationCorpus)return;
+  const item=calibrationCorpus.cases[calibrationIndex];
+  const decision=calibrationDecisions[item.id];
+  $("#calibration-progress").textContent=`${calibrationIndex+1} / ${calibrationCorpus.cases.length} · решено ${calibrationSummary(calibrationCorpus,calibrationDecisions).reviewed}`;
+  $("#calibration-case").innerHTML=`<div class="case-head"><span>${escapeHtml(item.id)}</span><b>${escapeHtml(item.sourceConstruct)}</b></div><div class="case-text source"><small>КАНОНИЧЕСКИЙ ИСТОЧНИК</small><p>${escapeHtml(item.source)}</p></div><div class="case-arrow">↓ преобразование</div><div class="case-text variant"><small>ВАРИАНТ</small><p>${escapeHtml(item.variant)}</p></div>${decision?`<div class="candidate-reveal ${decision===item.candidateLabel?"match":"differ"}"><div><span>Твоё решение</span><b>${calibrationLabels[decision]}</b></div><div><span>Первичная метка</span><b>${calibrationLabels[item.candidateLabel]}</b></div><p>${escapeHtml(item.rationale)}</p></div>`:'<div class="candidate-hidden">Первичная метка откроется после решения</div>'}`;
+  document.querySelectorAll(".calibration-labels button").forEach(button=>button.classList.toggle("active",button.dataset.label===decision));
+  $("#calibration-prev").disabled=calibrationIndex===0;
+  $("#calibration-next").disabled=calibrationIndex===calibrationCorpus.cases.length-1;
+  $("#export-calibration").disabled=calibrationSummary(calibrationCorpus,calibrationDecisions).reviewed===0;
+  renderCalibrationOutput();
+}
+
+function chooseCalibration(label){
+  if(!calibrationCorpus)return;
+  calibrationDecisions[calibrationCorpus.cases[calibrationIndex].id]=label;
+  saveCalibrationDecisions();renderCalibrationCase();
+}
+
+async function loadCalibrationCorpus(){
+  try{
+    const response=await fetch("./calibration/corpus.v1.json");
+    if(!response.ok)throw new Error(`HTTP ${response.status}`);
+    const corpus=await response.json();
+    const check=validateCalibrationCorpus(corpus);
+    if(!check.valid)throw new Error(check.errors.join("; "));
+    calibrationCorpus=corpus;
+    try{calibrationDecisions=JSON.parse(localStorage.getItem("tzar-calibration-001-decisions")||"{}")||{}}catch{calibrationDecisions={}}
+    renderCalibrationCase();
+  }catch(error){
+    $("#calibration-case").innerHTML=`<div class="error"><strong>Корпус не загружен</strong><p>${escapeHtml(error.message)}</p></div>`;
+  }
+}
+
 function analyzeInWorker(texts,onProgress){
   return new Promise((resolve,reject)=>{
     const worker=new Worker(new URL("./semantic-worker.mjs",import.meta.url),{type:"module"});
@@ -157,12 +207,21 @@ async function run(payload=payloadFromBuilder()){
   try{setStatus("Проверка…","work");currentReport=await verifyPayload(payload);currentReportKind="structural";render(currentReport);enableExports();input.value=JSON.stringify(payload,null,2);saveDraft();setStatus(currentReport.pass?"Контур проводим":"Контур разорван",currentReport.pass?"pass":"fail")}
   catch(error){currentReport=null;result.innerHTML=`<div class="error"><strong>Невозможно выполнить проверку</strong><p>${escapeHtml(error.message)}</p></div>`;exportJson.disabled=true;exportMarkdown.disabled=true;setStatus("Ошибка входа","fail")}
 }
-function switchMode(mode){document.body.dataset.mode=mode;document.querySelectorAll(".mode").forEach(b=>b.classList.toggle("active",b.dataset.mode===mode));$("#output-title").textContent=mode==="semantic"?"Карта смысловой проводимости":"Карта структурной проводимости";if(mode==="json")input.value=JSON.stringify(payloadFromBuilder(),null,2)}
+function switchMode(mode){document.body.dataset.mode=mode;document.querySelectorAll(".mode").forEach(b=>b.classList.toggle("active",b.dataset.mode===mode));$("#output-title").textContent=mode==="semantic"?"Карта смысловой проводимости":mode==="calibration"?"Карта авторского обзора":"Карта структурной проводимости";if(mode==="json")input.value=JSON.stringify(payloadFromBuilder(),null,2);if(mode==="calibration"){exportJson.disabled=true;exportMarkdown.disabled=true;renderCalibrationCase()}}
 
 $("#verify").onclick=()=>run();
 $("#analyze-semantic").onclick=()=>cancelSemanticJob?cancelSemanticJob():runSemantic();
 $("#semantic-example").onclick=()=>loadSemanticExample();
 $("#add-variant").onclick=()=>{semanticVariantCard();saveSemanticDraft()};
+document.querySelectorAll(".calibration-labels button").forEach(button=>button.onclick=()=>chooseCalibration(button.dataset.label));
+$("#calibration-prev").onclick=()=>{if(calibrationIndex>0){calibrationIndex-=1;renderCalibrationCase()}};
+$("#calibration-next").onclick=()=>{if(calibrationCorpus&&calibrationIndex<calibrationCorpus.cases.length-1){calibrationIndex+=1;renderCalibrationCase()}};
+$("#export-calibration").onclick=async()=>{
+  if(!calibrationCorpus)return;
+  const review=await sealReport(buildAuthorReview(calibrationCorpus,calibrationDecisions));
+  download("tzar-calibration-001-author-review.json",JSON.stringify(review,null,2),"application/json");
+  setStatus("Авторские решения экспортированы","pass");
+};
 $("#verify-json").onclick=()=>{try{const payload=JSON.parse(input.value);loadBuilder(payload);run(payload)}catch(error){setStatus("Ошибка JSON","fail");result.innerHTML=`<div class="error"><strong>JSON не прочитан</strong><p>${escapeHtml(error.message)}</p></div>`}};
 $("#example").onclick=()=>{loadBuilder(structuredClone(example));run()};
 $("#reset").onclick=()=>{loadBuilder(structuredClone(example));setStatus("Пример восстановлен")};
@@ -197,3 +256,4 @@ switchMode("semantic");
 currentReport=null;exportJson.disabled=true;exportMarkdown.disabled=true;
 result.innerHTML='<div class="empty">Исходная мысль и три преобразования уже загружены. Запустите смысловую проверку.</div>';
 setStatus("Смысловой контур готов","idle");
+loadCalibrationCorpus();
