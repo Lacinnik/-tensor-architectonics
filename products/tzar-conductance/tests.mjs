@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { example } from "./example.mjs";
 import { extractInvariant, verifyPayload, verifyReportSeal } from "./core.mjs";
+import { buildSemanticItems, classifySemantic, cosineSimilarity, inspectAnchors, parseAnchors } from "./semantic.mjs";
 
 const report = await verifyPayload(example);
 assert.equal(report.pass, true);
@@ -30,4 +31,18 @@ tamperedPassport.positive[0].label = "Подменённая форма";
 assert.equal((await verifyReportSeal(tamperedPassport)).valid, false);
 assert.equal((await verifyReportSeal({})).valid, false);
 
-console.log("TZAR-PRODUCT-001: 20 assertions passed");
+assert.deepEqual(parseAnchors("  Осевой термин  \nосевой термин\nВторая опора"), ["осевой термин", "вторая опора"]);
+assert.equal(inspectAnchors("Здесь есть ОСЕВОЙ   ТЕРМИН.", ["осевой термин"]).coverage, 1);
+assert.deepEqual(inspectAnchors("Опора утрачена", ["осевой термин"]).missing, ["осевой термин"]);
+assert.equal(cosineSimilarity([1, 0], [1, 0]), 1);
+assert.equal(cosineSimilarity([1, 0], [0, 1]), 0);
+assert.throws(() => cosineSimilarity([1], [1, 2]), /одинаковую/);
+assert.equal(classifySemantic(0.9, inspectAnchors("опора", ["опора"])).code, "preserved");
+assert.equal(classifySemantic(0.7, inspectAnchors("опора", ["опора"])).code, "review");
+assert.equal(classifySemantic(0.4, inspectAnchors("опора", ["опора"])).code, "rupture");
+assert.equal(classifySemantic(0.99, inspectAnchors("другой текст", ["опора"])).code, "critical-break");
+const semanticItems = buildSemanticItems("Источник", [{ label: "A", text: "опора" }], [[1, 0], [0.8, 0.2]], ["опора"]);
+assert.equal(semanticItems.length, 1);
+assert.equal(semanticItems[0].verdict.code, "preserved");
+
+console.log("TZAR-PRODUCT-001: 32 assertions passed");
