@@ -1,0 +1,20 @@
+{
+  "schema": "tzar-author-key-registration/1.0.0",
+  "keyId": "TZAR-AUTHOR-KEY-001",
+  "author": "Александр Лацинник",
+  "algorithm": "ECDSA-P256-SHA256",
+  "fingerprint": "sha256:Ynjlrfr7-2Ce9ck9RrTZgOo6lXcqwcMpUyl_X0t7G1s",
+  "createdAt": "2026-07-17T12:56:08.271Z",
+  "status": "proposed",
+  "publicKeyJwk": {
+    "crv": "P-256",
+    "ext": true,
+    "key_ops": [
+      "verify"
+    ],
+    "kty": "EC",
+    "x": "gH9E5FPv2cXCYJifqvI83jiOs52bDmlWKIaK-skGCMI",
+    "y": "_n3145wxcwS9ZwVINVSRMv42mzKbFPbTbxOX7NF9z6c"
+  },
+  "proofOfPossession": "DosKHD4PoRBsC297dULrHdSAd5n_VCfQu66DYBnn7uYEaTPLYQ06tvbBgMgSCPZ8DH4jZG6UfgpAMg3ZmTQfKQ"
+}
