@@ -13,7 +13,7 @@
 
 1. [Декларация 001 — «Осевание»](01-declarations/DECLARATION-001-OSEVANIE.md) — `canonical`.
 2. [Аксиома 001 — «Супровый инвариант»](02-axioms/AXIOM-001-SUPRA-INVARIANT.md) — `canonical`.
-3. [Теорема 001 — «Транзитивная проводимость»](03-theory/THEOREM-001-TRANSITIVE-CONDUCTANCE.md) — `verified`.
+3. [Теорема 001 — «Транзитивная проводимость»](03-theory/THEOREM-001-TRANSITIVE-CONDUCTANCE.md) — `canonical`.
 
 ## Резонансный контур
 
