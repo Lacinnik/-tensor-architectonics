@@ -1,0 +1,64 @@
+{
+  "schema": "tzar-operational-check/1.0.0",
+  "id": "TZAR-CHECK-001",
+  "title": "Первая операционная проверка TZAR Conductance 1.0",
+  "target": {
+    "product": "TZAR-PRODUCT-001",
+    "version": "1.0.0",
+    "url": "https://lacinnik.github.io/-tensor-architectonics/"
+  },
+  "executedAt": "2026-07-17T13:31:57Z",
+  "checks": [
+    {
+      "id": "release-status",
+      "result": "PASS",
+      "observed": "version 1.0.0, status stable"
+    },
+    {
+      "id": "release-seal",
+      "result": "PASS",
+      "observed": "beda0081129d2a7892a8f93b3d4794fc5d005b286cfb5d1b9f186e48a6d7cd27"
+    },
+    {
+      "id": "author-review-seal",
+      "result": "PASS",
+      "observed": "7d804921b0db3079950f92c8e020849de7a569e7ecca88251c4eae6344cc3771"
+    },
+    {
+      "id": "author-review-completeness",
+      "result": "PASS",
+      "observed": "12 decisions: 12 preserved, 0 review, 0 rupture"
+    },
+    {
+      "id": "author-key-proof-of-possession",
+      "result": "PASS",
+      "observed": "ECDSA proof valid"
+    },
+    {
+      "id": "author-key-registry-trust",
+      "result": "PASS",
+      "observed": "sha256:Ynjlrfr7-2Ce9ck9RrTZgOo6lXcqwcMpUyl_X0t7G1s"
+    },
+    {
+      "id": "continuous-integration",
+      "result": "PASS",
+      "observed": "GitHub Actions run 29583987512 completed successfully"
+    },
+    {
+      "id": "deployment",
+      "result": "PASS",
+      "observed": "GitHub Actions run 29583987445 completed successfully"
+    }
+  ],
+  "evidence": {
+    "releasePassport": "https://lacinnik.github.io/-tensor-architectonics/release/TZAR-PRODUCT-001-1.0.0.json",
+    "authorReview": "https://lacinnik.github.io/-tensor-architectonics/calibration/author-review.v1.json",
+    "authorKeyRegistration": "https://lacinnik.github.io/-tensor-architectonics/author-keys/TZAR-AUTHOR-KEY-001.registration.json",
+    "authorKeyRegistry": "https://lacinnik.github.io/-tensor-architectonics/author-keys/registry.json",
+    "ciRun": "https://github.com/Lacinnik/-tensor-architectonics/actions/runs/29583987512",
+    "deploymentRun": "https://github.com/Lacinnik/-tensor-architectonics/actions/runs/29583987445"
+  },
+  "result": "PASS",
+  "sealAlgorithm": "SHA-256",
+  "seal": "c2e944497fd6d93dd2f776508ffc3ac6926474df32652deb764fff96f6d90c1b"
+}
