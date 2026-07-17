@@ -4,7 +4,7 @@
 
 ## Декларации
 
-1. [**TZAR-DECLARATION-001 — «Осевание»**](../01-declarations/DECLARATION-001-OSEVANIE.md) — версия `1.0.0`, статус `candidate`.
+1. [**TZAR-DECLARATION-001 — «Осевание»**](../01-declarations/DECLARATION-001-OSEVANIE.md) — версия `1.0.0`, статус `canonical`.
 2. «Архитектоника — актуальное положение» — исходный PDF.
 
 ## Теоретические работы
