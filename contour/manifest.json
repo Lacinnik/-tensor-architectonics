@@ -119,6 +119,23 @@
         "TZAR-THEOREM-001"
       ],
       "executedAt": "2026-07-17"
+    },
+    {
+      "id": "TZAR-PRODUCT-001",
+      "type": "product",
+      "title": "TZAR Conductance",
+      "path": "products/tzar-conductance/index.html",
+      "passport": "05-engineering-applications/TZAR-PRODUCT-001.md",
+      "version": "0.1.0",
+      "status": "mvp",
+      "derivedFrom": [
+        "TZAR-DECLARATION-001",
+        "TZAR-AXIOM-001",
+        "TZAR-THEOREM-001"
+      ],
+      "verifiedBy": [
+        "TZAR-EXPERIMENT-001"
+      ]
     }
   ]
 }
