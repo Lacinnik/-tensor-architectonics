@@ -18,10 +18,14 @@ export function canonicalString(invariant) {
   return JSON.stringify(Object.fromEntries(FIELDS.map((field) => [field, invariant[field]])));
 }
 
-export async function fingerprint(invariant) {
-  const bytes = new TextEncoder().encode(canonicalString(invariant));
+async function digestString(value) {
+  const bytes = new TextEncoder().encode(value);
   const digest = await globalThis.crypto.subtle.digest("SHA-256", bytes);
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+export async function fingerprint(invariant) {
+  return digestString(canonicalString(invariant));
 }
 
 async function inspect(form, expected, kind) {
@@ -52,14 +56,41 @@ export async function verifyPayload(payload) {
   if (negativeControls.length < 1) throw new Error("Нужен хотя бы один отрицательный контроль");
   const positive = await Promise.all(forms.map((form) => inspect(form, expected, "positive")));
   const negative = await Promise.all(negativeControls.map((form) => inspect(form, expected, "negative")));
+  const ledger = [];
+  let parentHash = sourceHash;
+  let chainContinuous = true;
+  for (let index = 0; index < positive.length; index += 1) {
+    const item = positive[index];
+    chainContinuous = chainContinuous && item.pass;
+    const transitionHash = await digestString(JSON.stringify({
+      index,
+      parentHash,
+      currentHash: item.hash,
+      label: item.label,
+      geometry: item.geometry,
+    }));
+    ledger.push({
+      index: index + 1,
+      label: item.label,
+      geometry: item.geometry,
+      parentHash,
+      currentHash: item.hash,
+      transitionHash,
+      continuous: chainContinuous,
+    });
+    parentHash = item.hash;
+  }
+  const firstBreak = ledger.find((entry) => !entry.continuous) ?? null;
   return {
-    schema: "tzar-conductance-report/1.0.0",
+    schema: "tzar-conductance-report/1.1.0",
     product: "TZAR-PRODUCT-001",
     theorem: "TZAR-THEOREM-001",
     generatedAt: new Date().toISOString(),
     source: { hash: sourceHash, invariant: sourceInvariant },
     positive,
     negative,
+    ledger,
+    firstBreak,
     pass: positive.every((item) => item.pass) && negative.every((item) => item.pass),
   };
 }
@@ -67,6 +98,9 @@ export async function verifyPayload(payload) {
 export function reportMarkdown(report) {
   const rows = [...report.positive, ...report.negative]
     .map((item) => `| ${item.label} | ${item.geometry} | ${item.kind} | ${item.pass ? "PASS" : "FAIL"} | \`${item.hash}\` |`)
+    .join("\n");
+  const ledgerRows = report.ledger
+    .map((entry) => `| ${entry.index} | ${entry.label} | ${entry.geometry} | ${entry.continuous ? "CONTINUOUS" : "BREAK"} | \`${entry.transitionHash}\` |`)
     .join("\n");
   return `# TZAR Conductance Report
 
@@ -78,5 +112,13 @@ export function reportMarkdown(report) {
 | Form | Geometry | Control | Result | SHA-256 |
 |---|---|---|---|---|
 ${rows}
+
+## Transition ledger
+
+| Step | Form | Geometry | Continuity | Transition SHA-256 |
+|---|---|---|---|---|
+${ledgerRows}
+
+First break: ${report.firstBreak ? `step ${report.firstBreak.index} — ${report.firstBreak.label}` : "not detected"}.
 `;
 }
