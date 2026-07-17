@@ -36,6 +36,10 @@
 
 1. [**TZAR-EXPERIMENT-001 — «Проводимость Осевания»**](../05-engineering-applications/EXPERIMENT-001/README.md) — результат `PASS`; проверяет TZAR-THEOREM-001.
 
+## Цифровые продукты
+
+1. [**TZAR-PRODUCT-001 — «TZAR Conductance»**](../05-engineering-applications/TZAR-PRODUCT-001.md) — версия `0.1.0`, статус `mvp`; рабочая форма: [browser application](../products/tzar-conductance/).
+
 ## Принцип публикации
 
 Исходные авторские файлы публикуются без смыслового переписывания. Новые формализованные конструкты получают идентификатор, версию и статус резонансного контура.
