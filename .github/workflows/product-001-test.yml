@@ -29,5 +29,7 @@ jobs:
           node --check products/tzar-conductance/semantic-runtime.mjs
           node --check products/tzar-conductance/semantic-worker.mjs
           node --check products/tzar-conductance/calibration.mjs
+          node --check products/tzar-conductance/author-key.mjs
+          node --check products/tzar-conductance/key-vault.mjs
       - name: Run product tests
         run: node products/tzar-conductance/tests.mjs
