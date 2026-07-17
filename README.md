@@ -17,13 +17,15 @@
 
 ## Первый цифровой продукт
 
-[**TZAR-PRODUCT-001 — TZAR Conductance**](products/tzar-conductance/) · версия `0.8.1` · статус `author-key-trusted`
+[**TZAR-PRODUCT-001 — TZAR Conductance**](products/tzar-conductance/) · версия `1.0.0` · статус `stable`
 
 Браузерный проводник конструкта: строит локальную модельную оценку свободных формулировок, выделяет точные опоры, логические и лексические изменения включает слепой авторский обзор калибровочного корпуса и локальный контур криптографической подписи паспортов.
 
-[**TZAR-CALIBRATION-001 — первичный корпус смысловой проводимости**](products/tzar-conductance/calibration/) · 12 случаев · статус `candidate`.
+[**TZAR-CALIBRATION-001 — первичный корпус смысловой проводимости**](products/tzar-conductance/calibration/) · 12 случаев · статус `author-reviewed`.
 
 [**TZAR-AUTHOR-KEY-001 — открытый авторский ключ**](products/tzar-conductance/author-keys/) · статус `trusted` · отпечаток `sha256:Ynjlrfr7-2Ce9ck9RrTZgOo6lXcqwcMpUyl_X0t7G1s`.
+
+[**Стабильный релиз 1.0**](products/tzar-conductance/release/RELEASE-1.0.md) · авторский базис `12 preserved / 0 review / 0 rupture`.
 
 ## Резонансный контур
 
