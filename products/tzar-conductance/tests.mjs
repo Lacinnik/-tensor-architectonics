@@ -97,5 +97,8 @@ const signatureTamper = structuredClone(signedReport);
 signatureTamper.seal = "0".repeat(64);
 assert.equal((await verifyAuthorSignature(signatureTamper)).valid, false);
 assert.equal((await verifyReportSeal(signatureTamper)).valid, false);
+const algorithmTamper = structuredClone(signedReport);
+algorithmTamper.authorSignature.algorithm = "UNTRUSTED";
+assert.equal((await verifyAuthorSignature(algorithmTamper)).valid, false);
 
-console.log("TZAR-PRODUCT-001: 70 assertions passed");
+console.log("TZAR-PRODUCT-001: 71 assertions passed");
