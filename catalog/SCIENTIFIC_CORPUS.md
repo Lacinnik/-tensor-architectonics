@@ -42,7 +42,7 @@
 
 ## Цифровые продукты
 
-1. [**TZAR-PRODUCT-001 — «TZAR Conductance»**](../05-engineering-applications/TZAR-PRODUCT-001.md) — версия `0.7.0`, статус `calibration-beta`; рабочая форма: [browser application](../products/tzar-conductance/).
+1. [**TZAR-PRODUCT-001 — «TZAR Conductance»**](../05-engineering-applications/TZAR-PRODUCT-001.md) — версия `0.8.0`, статус `author-key-beta`; рабочая форма: [browser application](../products/tzar-conductance/).
 
 ## Принцип публикации
 
