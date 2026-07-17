@@ -18,6 +18,7 @@ let cancelSemanticJob=null;
 let calibrationCorpus=null;
 let calibrationIndex=0;
 let calibrationDecisions={};
+let publishedAuthorReview=null;
 let activeAuthorKey=null;
 let trustedKeyRegistry={keys:[]};
 const calibrationLabels={preserved:"ПРОВОДИМО",review:"ТРЕБУЕТ РАЗЛИЧЕНИЯ",rupture:"РАЗРЫВ"};
@@ -133,7 +134,7 @@ function renderCalibrationOutput(){
   if(!calibrationCorpus)return;
   const summary=calibrationSummary(calibrationCorpus,calibrationDecisions);
   const rate=summary.agreementRate===null?"—":`${Math.round(summary.agreementRate*100)}%`;
-  result.innerHTML=`<div class="summary calibration-summary"><span class="summary-mark">${summary.reviewed}</span><div><small>Авторское различение</small><strong>${summary.complete?"КОРПУС РАЗМЕЧЕН":"ОБЗОР ПРОДОЛЖАЕТСЯ"}</strong></div></div><div class="corpus-stats"><div><span>Рассмотрено</span><b>${summary.reviewed} / ${summary.total}</b></div><div><span>Совпадение с кандидатом</span><b>${rate}</b></div><div><span>Проводимо</span><b>${summary.labels.preserved}</b></div><div><span>Различить</span><b>${summary.labels.review}</b></div><div><span>Разрыв</span><b>${summary.labels.rupture}</b></div></div><div class="method-note"><b>${summary.complete?"Следующий научный ход":"Почему метка скрыта"}</b><p>${summary.complete?"Теперь решения можно экспортировать, зафиксировать как авторскую ревизию и использовать для прогона модели и расчёта порогов.":"Независимый выбор не позволяет первичной разметке ассистента подменить авторское различение."}</p></div>`;
+  result.innerHTML=`<div class="summary calibration-summary"><span class="summary-mark">${summary.reviewed}</span><div><small>Авторское различение</small><strong>${summary.complete?"КОРПУС РАЗМЕЧЕН":"ОБЗОР ПРОДОЛЖАЕТСЯ"}</strong></div></div>${publishedAuthorReview?'<div class="published-baseline"><b>ОПУБЛИКОВАННЫЙ АВТОРСКИЙ БАЗИС</b><span>12 проводимо · 0 различить · 0 разрыв</span><p>Противоречие проявленной формы само по себе не устанавливает разрыв проводимости.</p></div>':""}<div class="corpus-stats"><div><span>Рассмотрено тобой</span><b>${summary.reviewed} / ${summary.total}</b></div><div><span>Совпадение с кандидатом</span><b>${rate}</b></div><div><span>Проводимо</span><b>${summary.labels.preserved}</b></div><div><span>Различить</span><b>${summary.labels.review}</b></div><div><span>Разрыв</span><b>${summary.labels.rupture}</b></div></div><div class="method-note"><b>${publishedAuthorReview?"Два слоя различения":summary.complete?"Следующий научный ход":"Почему метка скрыта"}</b><p>${publishedAuthorReview?"Машинный слой показывает риски и различия; опубликованный авторский слой устанавливает проводимость внутри ТзАр.":summary.complete?"Решения можно экспортировать как самостоятельный авторский обзор.":"Независимый выбор не позволяет первичной разметке ассистента подменить авторское различение."}</p></div>`;
 }
 
 function renderCalibrationCase(){
@@ -141,7 +142,8 @@ function renderCalibrationCase(){
   const item=calibrationCorpus.cases[calibrationIndex];
   const decision=calibrationDecisions[item.id];
   $("#calibration-progress").textContent=`${calibrationIndex+1} / ${calibrationCorpus.cases.length} · решено ${calibrationSummary(calibrationCorpus,calibrationDecisions).reviewed}`;
-  $("#calibration-case").innerHTML=`<div class="case-head"><span>${escapeHtml(item.id)}</span><b>${escapeHtml(item.sourceConstruct)}</b></div><div class="case-text source"><small>КАНОНИЧЕСКИЙ ИСТОЧНИК</small><p>${escapeHtml(item.source)}</p></div><div class="case-arrow">↓ преобразование</div><div class="case-text variant"><small>ВАРИАНТ</small><p>${escapeHtml(item.variant)}</p></div>${decision?`<div class="candidate-reveal ${decision===item.candidateLabel?"match":"differ"}"><div><span>Твоё решение</span><b>${calibrationLabels[decision]}</b></div><div><span>Первичная метка</span><b>${calibrationLabels[item.candidateLabel]}</b></div><p>${escapeHtml(item.rationale)}</p></div>`:'<div class="candidate-hidden">Первичная метка откроется после решения</div>'}`;
+  const publishedLabel=publishedAuthorReview?.decisions?.find(entry=>entry.caseId===item.id)?.label;
+  $("#calibration-case").innerHTML=`<div class="case-head"><span>${escapeHtml(item.id)}</span><b>${escapeHtml(item.sourceConstruct)}</b></div><div class="case-text source"><small>КАНОНИЧЕСКИЙ ИСТОЧНИК</small><p>${escapeHtml(item.source)}</p></div><div class="case-arrow">↓ преобразование</div><div class="case-text variant"><small>ВАРИАНТ</small><p>${escapeHtml(item.variant)}</p></div>${decision?`<div class="candidate-reveal ${decision===item.candidateLabel?"match":"differ"}"><div><span>Твоё решение</span><b>${calibrationLabels[decision]}</b></div><div><span>Первичная метка</span><b>${calibrationLabels[item.candidateLabel]}</b></div>${publishedLabel?`<div><span>Авторский базис 1.0</span><b>${calibrationLabels[publishedLabel]}</b></div>`:""}<p>${escapeHtml(item.rationale)}</p></div>`:'<div class="candidate-hidden">Метки откроются после твоего решения</div>'}`;
   document.querySelectorAll(".calibration-labels button").forEach(button=>button.classList.toggle("active",button.dataset.label===decision));
   $("#calibration-prev").disabled=calibrationIndex===0;
   $("#calibration-next").disabled=calibrationIndex===calibrationCorpus.cases.length-1;
@@ -229,12 +231,13 @@ function chooseCalibration(label){
 
 async function loadCalibrationCorpus(){
   try{
-    const response=await fetch("./calibration/corpus.v1.json");
+    const [response,reviewResponse]=await Promise.all([fetch("./calibration/corpus.v1.json"),fetch("./calibration/author-review.v1.json")]);
     if(!response.ok)throw new Error(`HTTP ${response.status}`);
     const corpus=await response.json();
     const check=validateCalibrationCorpus(corpus);
     if(!check.valid)throw new Error(check.errors.join("; "));
     calibrationCorpus=corpus;
+    if(reviewResponse.ok){const review=await reviewResponse.json();if((await verifyReportSeal(review)).valid)publishedAuthorReview=review}
     try{calibrationDecisions=JSON.parse(localStorage.getItem("tzar-calibration-001-decisions")||"{}")||{}}catch{calibrationDecisions={}}
     renderCalibrationCase();
   }catch(error){
