@@ -98,15 +98,16 @@
       "type": "theorem",
       "title": "Транзитивная проводимость",
       "path": "03-theory/THEOREM-001-TRANSITIVE-CONDUCTANCE.md",
-      "version": "0.1.0",
-      "status": "verified",
+      "version": "1.0.0",
+      "status": "canonical",
       "derivedFrom": [
         "TZAR-AXIOM-001"
       ],
       "verifiedAt": "2026-07-17",
       "verifiedBy": [
         "TZAR-EXPERIMENT-001"
-      ]
+      ],
+      "canonicalizedAt": "2026-07-17"
     },
     {
       "id": "TZAR-EXPERIMENT-001",
