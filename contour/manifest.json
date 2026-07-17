@@ -99,10 +99,25 @@
       "title": "Транзитивная проводимость",
       "path": "03-theory/THEOREM-001-TRANSITIVE-CONDUCTANCE.md",
       "version": "0.1.0",
-      "status": "candidate",
+      "status": "verified",
       "derivedFrom": [
         "TZAR-AXIOM-001"
+      ],
+      "verifiedAt": "2026-07-17",
+      "verifiedBy": [
+        "TZAR-EXPERIMENT-001"
       ]
+    },
+    {
+      "id": "TZAR-EXPERIMENT-001",
+      "type": "experiment",
+      "title": "Проводимость Осевания",
+      "path": "05-engineering-applications/EXPERIMENT-001/README.md",
+      "status": "passed",
+      "verifies": [
+        "TZAR-THEOREM-001"
+      ],
+      "executedAt": "2026-07-17"
     }
   ]
 }
