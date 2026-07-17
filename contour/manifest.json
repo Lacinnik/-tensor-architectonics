@@ -126,7 +126,7 @@
       "title": "TZAR Conductance",
       "path": "products/tzar-conductance/index.html",
       "passport": "05-engineering-applications/TZAR-PRODUCT-001.md",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "status": "mvp",
       "derivedFrom": [
         "TZAR-DECLARATION-001",
@@ -143,7 +143,9 @@
         "json-professional-mode",
         "transition-ledger",
         "first-break-detection",
-        "provenance-passport"
+        "provenance-passport",
+        "report-control-seal",
+        "external-passport-verification"
       ]
     }
   ]
