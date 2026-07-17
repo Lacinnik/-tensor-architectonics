@@ -126,7 +126,7 @@
       "title": "TZAR Conductance",
       "path": "products/tzar-conductance/index.html",
       "passport": "05-engineering-applications/TZAR-PRODUCT-001.md",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "status": "mvp",
       "derivedFrom": [
         "TZAR-DECLARATION-001",
@@ -135,6 +135,12 @@
       ],
       "verifiedBy": [
         "TZAR-EXPERIMENT-001"
+      ],
+      "blocks": [
+        "visual-builder",
+        "field-difference-map",
+        "local-draft",
+        "json-professional-mode"
       ]
     }
   ]
