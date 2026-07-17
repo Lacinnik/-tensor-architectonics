@@ -1,0 +1,20 @@
+{
+  "experiment": "TZAR-EXPERIMENT-001",
+  "representation": {
+    "geometry": "Euclid",
+    "model": "ordered-linear",
+    "sections": [
+      "subject-structure",
+      "supra",
+      "becoming-existent"
+    ]
+  },
+  "invariant": {
+    "constructId": "TZAR-DECLARATION-001",
+    "author": "Александр Лацинник",
+    "axisTerm": "осевание",
+    "axisDefinition": "Осевание — приведение субъектной структуры в состояние, при котором супра становится сущей.",
+    "version": "1.0.0",
+    "status": "canonical"
+  }
+}
