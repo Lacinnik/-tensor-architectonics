@@ -126,8 +126,8 @@
       "title": "TZAR Conductance",
       "path": "products/tzar-conductance/index.html",
       "passport": "05-engineering-applications/TZAR-PRODUCT-001.md",
-      "version": "0.5.0",
-      "status": "semantic-beta",
+      "version": "0.6.0",
+      "status": "semantic-audit-beta",
       "derivedFrom": [
         "TZAR-DECLARATION-001",
         "TZAR-AXIOM-001",
@@ -149,7 +149,13 @@
         "local-semantic-embeddings",
         "critical-anchor-control",
         "semantic-range-calibration",
-        "semantic-passport"
+        "semantic-passport",
+        "logic-risk-detector",
+        "lexical-difference-map",
+        "long-text-chunking",
+        "semantic-web-worker",
+        "semantic-draft",
+        "pinned-model-revision"
       ]
     }
   ]
