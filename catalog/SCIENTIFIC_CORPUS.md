@@ -40,9 +40,13 @@
 
 1. [**TZAR-CALIBRATION-001 — «Первичный корпус смысловой проводимости»**](../products/tzar-conductance/calibration/) — 12 случаев, статус `candidate`; ожидает авторского различения.
 
+## Авторские ключи
+
+1. [**TZAR-AUTHOR-KEY-001 — открытый ключ Александра Лацинника**](../products/tzar-conductance/author-keys/) — `ECDSA-P256-SHA256`, статус `trusted`.
+
 ## Цифровые продукты
 
-1. [**TZAR-PRODUCT-001 — «TZAR Conductance»**](../05-engineering-applications/TZAR-PRODUCT-001.md) — версия `0.8.0`, статус `author-key-beta`; рабочая форма: [browser application](../products/tzar-conductance/).
+1. [**TZAR-PRODUCT-001 — «TZAR Conductance»**](../05-engineering-applications/TZAR-PRODUCT-001.md) — версия `0.8.1`, статус `author-key-trusted`; рабочая форма: [browser application](../products/tzar-conductance/).
 
 ## Принцип публикации
 
