@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#071529">
+  <title>TZAR Conductance</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="orb orb-a"></div><div class="orb orb-b"></div>
+  <main>
+    <header>
+      <div class="brand"><span class="sigil">⊕</span><div><b>TZAR</b><small>PRODUCT 001</small></div></div>
+      <div id="status" class="status" data-tone="idle">Ожидание конструкта</div>
+    </header>
+    <section class="hero">
+      <p class="eyebrow">Тензорная Архитектоника · проводимость конструкта</p>
+      <h1>Форма меняется.<br><em>Инвариант остаётся различимым.</em></h1>
+      <p class="lead">Инструмент проверяет сохранение явно заданного супрового инварианта между представлениями и обнаруживает точку подмены.</p>
+    </section>
+    <section class="workspace">
+      <div class="panel input-panel">
+        <div class="panel-head"><div><small>01 · ВХОД</small><h2>Конструкт и формы</h2></div><div class="actions"><button id="example" class="ghost">Пример</button><button id="reset" class="ghost">Очистить</button></div></div>
+        <textarea id="payload" spellcheck="false" aria-label="JSON конструкта"></textarea>
+        <button id="verify" class="primary"><span>Провести через контур</span><b>→</b></button>
+      </div>
+      <div class="panel output-panel">
+        <div class="panel-head"><div><small>02 · РАЗЛИЧЕНИЕ</small><h2>Карта проводимости</h2></div><div class="actions"><button id="export-json" class="ghost" disabled>JSON</button><button id="export-markdown" class="ghost" disabled>Markdown</button></div></div>
+        <div id="result"><div class="empty">Загрузите пример или вставьте JSON-конструкт.</div></div>
+      </div>
+    </section>
+    <footer><span>σ · SHA-256 · TZAR-THEOREM-001</span><p>Структурная проверка. Инструмент не измеряет супру и не подменяет научное доказательство.</p></footer>
+  </main>
+  <script type="module" src="./app.mjs"></script>
+</body>
+</html>
