@@ -38,6 +38,13 @@ async function calculateReportSeal(report) {
   return digestString(stableString(unsigned));
 }
 
+export async function sealReport(report) {
+  const sealed = structuredClone(report);
+  sealed.sealAlgorithm = "SHA-256";
+  sealed.seal = await calculateReportSeal(sealed);
+  return sealed;
+}
+
 export async function verifyReportSeal(report) {
   if (!report || typeof report !== "object" || typeof report.seal !== "string") {
     return { valid: false, reason: "Паспорт не содержит контрольную печать" };
@@ -121,8 +128,7 @@ export async function verifyPayload(payload) {
     pass: positive.every((item) => item.pass) && negative.every((item) => item.pass),
     sealAlgorithm: "SHA-256",
   };
-  report.seal = await calculateReportSeal(report);
-  return report;
+  return sealReport(report);
 }
 
 export function reportMarkdown(report) {
