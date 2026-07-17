@@ -38,7 +38,7 @@
 
 ## Калибровочные корпуса
 
-1. [**TZAR-CALIBRATION-001 — «Первичный корпус смысловой проводимости»**](../products/tzar-conductance/calibration/) — 12 случаев, статус `candidate`; ожидает авторского различения.
+1. [**TZAR-CALIBRATION-001 — «Первичный корпус смысловой проводимости»**](../products/tzar-conductance/calibration/) — 12 случаев, статус `author-reviewed`; результат `12 preserved / 0 review / 0 rupture`.
 
 ## Авторские ключи
 
@@ -46,7 +46,7 @@
 
 ## Цифровые продукты
 
-1. [**TZAR-PRODUCT-001 — «TZAR Conductance»**](../05-engineering-applications/TZAR-PRODUCT-001.md) — версия `0.8.1`, статус `author-key-trusted`; рабочая форма: [browser application](../products/tzar-conductance/).
+1. [**TZAR-PRODUCT-001 — «TZAR Conductance»**](../05-engineering-applications/TZAR-PRODUCT-001.md) — версия `1.0.0`, статус `stable`; [релиз 1.0](../products/tzar-conductance/release/RELEASE-1.0.md); рабочая форма: [browser application](../products/tzar-conductance/).
 
 ## Принцип публикации
 
