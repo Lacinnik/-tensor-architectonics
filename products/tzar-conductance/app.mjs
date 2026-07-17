@@ -1,4 +1,4 @@
-import { reportMarkdown, verifyPayload } from "./core.mjs";
+import { reportMarkdown, verifyPayload, verifyReportSeal } from "./core.mjs";
 import { example } from "./example.mjs";
 
 const fields = ["constructId", "author", "axisTerm", "axisDefinition", "version", "status"];
@@ -6,7 +6,7 @@ const labels = { constructId:"ID конструкта",author:"Автор",axisT
 const geometries = ["Euclid","Lobachevsky","Riemann","Projective","Supra"];
 const $ = (selector) => document.querySelector(selector);
 const input=$("#payload"), result=$("#result"), status=$("#status"), formsHost=$("#forms"), sourceHost=$("#source-fields");
-const exportJson=$("#export-json"), exportMarkdown=$("#export-markdown");
+const exportJson=$("#export-json"), exportMarkdown=$("#export-markdown"), passportFile=$("#passport-file"), passportStatus=$("#passport-status");
 let currentReport=null;
 
 function setStatus(text,tone="idle"){status.textContent=text;status.dataset.tone=tone}
@@ -48,7 +48,7 @@ function loadBuilder(payload){
 function saveDraft(){try{localStorage.setItem("tzar-product-001-draft",JSON.stringify(payloadFromBuilder()))}catch{}}
 function render(report){
   const items=[...report.positive,...report.negative];
-  result.innerHTML=`<div class="summary ${report.pass?"pass":"fail"}"><span class="summary-mark">${report.pass?"⊕":"×"}</span><div><small>Результат контура</small><strong>${report.pass?"ПРОВОДИМ":"ОБНАРУЖЕН РАЗРЫВ"}</strong></div></div>
+  result.innerHTML=`<div class="summary ${report.pass?"pass":"fail"}"><span class="summary-mark">${report.pass?"⊕":"×"}</span><div><small>Результат контура</small><strong>${report.pass?"ПРОВОДИМ":"ОБНАРУЖЕН РАЗРЫВ"}</strong><code class="seal" title="${report.seal}">печать · ${report.seal.slice(0,16)}…</code></div></div>
   <div class="ledger-head"><small>ХРОНОС ПЕРЕХОДОВ</small><span>${report.firstBreak?`первый разрыв: шаг ${report.firstBreak.index}`:"цепь непрерывна"}</span></div>
   <div class="ledger">${report.ledger.map(entry=>`<div class="transition ${entry.continuous?"pass":"fail"}"><b>${String(entry.index).padStart(2,"0")}</b><div><span>${escapeHtml(entry.label)} · ${entry.geometry}</span><code title="${entry.transitionHash}">${entry.transitionHash.slice(0,12)}…</code></div><em>${entry.continuous?"→":"×"}</em></div>`).join("")}</div>
   <div class="chain">${items.map((item,index)=>`<article class="node ${item.pass?"pass":"fail"}"><div class="node-top"><span>${String(index+1).padStart(2,"0")}</span><b>${item.pass?"PASS":"FAIL"}</b></div><h3>${escapeHtml(item.label)}</h3><p>${item.geometry} · ${item.kind==="negative"?"отрицательный контроль":"положительная форма"}</p><code title="${item.hash}">${item.hash.slice(0,16)}…</code>${item.differences.length?`<div class="diffs">${item.differences.map(diff=>`<div><b>${labels[diff.field]||diff.field}</b><span>ожидалось: ${escapeHtml(diff.expected)}</span><span>получено: ${escapeHtml(diff.actual)}</span></div>`).join("")}</div>`:""}</article>`).join("")}</div>`;
@@ -65,6 +65,20 @@ $("#example").onclick=()=>{loadBuilder(structuredClone(example));run()};
 $("#reset").onclick=()=>{loadBuilder(structuredClone(example));setStatus("Пример восстановлен")};
 $("#add-form").onclick=()=>formCard({label:"Новая форма",representation:{geometry:"Euclid"},invariant:sourceInvariant()},"positive");
 $("#add-negative").onclick=()=>formCard({label:"Отрицательный контроль",representation:{geometry:"Projective"},invariant:{...sourceInvariant(),axisDefinition:sourceInvariant().axisDefinition+" [изменено]"}},"negative");
+$("#verify-passport").onclick=()=>passportFile.click();
+passportFile.onchange=async()=>{
+  const file=passportFile.files[0];if(!file)return;
+  try{
+    const passport=JSON.parse(await file.text());
+    const check=await verifyReportSeal(passport);
+    passportStatus.className=`passport-status ${check.valid?"pass":"fail"}`;
+    passportStatus.innerHTML=`<b>${check.valid?"ПАСПОРТ ЦЕЛ":"ПАСПОРТ ИЗМЕНЁН"}</b><span>${escapeHtml(check.reason)}</span><code>${escapeHtml((check.calculated||"").slice(0,20))}…</code>`;
+    setStatus(check.valid?"Паспорт проверен":"Подмена паспорта",check.valid?"pass":"fail");
+  }catch(error){
+    passportStatus.className="passport-status fail";
+    passportStatus.innerHTML=`<b>ПАСПОРТ НЕ ПРОЧИТАН</b><span>${escapeHtml(error.message)}</span>`;
+  }finally{passportFile.value=""}
+};
 document.querySelectorAll(".mode").forEach(button=>button.onclick=()=>switchMode(button.dataset.mode));
 exportJson.onclick=()=>download("tzar-conductance-report.json",JSON.stringify(currentReport,null,2),"application/json");
 exportMarkdown.onclick=()=>download("tzar-conductance-report.md",reportMarkdown(currentReport),"text/markdown");
