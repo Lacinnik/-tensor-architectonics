@@ -1,0 +1,16 @@
+{
+  "experiment": "TZAR-EXPERIMENT-001",
+  "representation": {
+    "geometry": "Projective",
+    "model": "relation-graph-mutated",
+    "mutation": "сущей → наблюдаемой"
+  },
+  "invariant": {
+    "constructId": "TZAR-DECLARATION-001",
+    "author": "Александр Лацинник",
+    "axisTerm": "осевание",
+    "axisDefinition": "Осевание — приведение субъектной структуры в состояние, при котором супра становится наблюдаемой.",
+    "version": "1.0.0",
+    "status": "canonical"
+  }
+}
