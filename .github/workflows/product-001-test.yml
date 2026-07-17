@@ -25,5 +25,7 @@ jobs:
         run: |
           node --check products/tzar-conductance/core.mjs
           node --check products/tzar-conductance/app.mjs
+          node --check products/tzar-conductance/semantic.mjs
+          node --check products/tzar-conductance/semantic-runtime.mjs
       - name: Run product tests
         run: node products/tzar-conductance/tests.mjs
