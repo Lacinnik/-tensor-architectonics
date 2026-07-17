@@ -27,6 +27,8 @@
 
 [**Стабильный релиз 1.0**](products/tzar-conductance/release/RELEASE-1.0.md) · авторский базис `12 preserved / 0 review / 0 rupture`.
 
+[**TZAR-CHECK-001 — первая операционная проверка**](05-engineering-applications/CHECK-001/README.md) · результат `PASS` · 8/8 проверок.
+
 ## Резонансный контур
 
 Репозиторий организован не только как архив работ, но и как проводящая научная среда:
