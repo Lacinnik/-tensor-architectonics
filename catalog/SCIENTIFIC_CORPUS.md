@@ -13,7 +13,7 @@
 
 ## Теоремы
 
-1. [**TZAR-THEOREM-001 — «Транзитивная проводимость»**](../03-theory/THEOREM-001-TRANSITIVE-CONDUCTANCE.md) — версия `0.1.0`, статус `verified`.
+1. [**TZAR-THEOREM-001 — «Транзитивная проводимость»**](../03-theory/THEOREM-001-TRANSITIVE-CONDUCTANCE.md) — версия `1.0.0`, статус `canonical`.
 
 ## Теоретические работы
 
