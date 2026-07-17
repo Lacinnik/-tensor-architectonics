@@ -127,7 +127,7 @@
       "path": "products/tzar-conductance/calibration/corpus.v1.json",
       "documentation": "products/tzar-conductance/calibration/README.md",
       "version": "1.0.0",
-      "status": "candidate",
+      "status": "author-reviewed",
       "language": "ru",
       "caseCount": 12,
       "labels": [
@@ -141,7 +141,13 @@
         "TZAR-DECLARATION-001",
         "TZAR-AXIOM-001",
         "TZAR-THEOREM-001"
-      ]
+      ],
+      "authorReview": "products/tzar-conductance/calibration/author-review.v1.json",
+      "result": {
+        "preserved": 12,
+        "review": 0,
+        "rupture": 0
+      }
     },
     {
       "id": "TZAR-AUTHOR-KEY-001",
@@ -160,8 +166,8 @@
       "title": "TZAR Conductance",
       "path": "products/tzar-conductance/index.html",
       "passport": "05-engineering-applications/TZAR-PRODUCT-001.md",
-      "version": "0.8.1",
-      "status": "author-key-trusted",
+      "version": "1.0.0",
+      "status": "stable",
       "derivedFrom": [
         "TZAR-DECLARATION-001",
         "TZAR-AXIOM-001",
@@ -204,6 +210,17 @@
         "fingerprint": "sha256:Ynjlrfr7-2Ce9ck9RrTZgOo6lXcqwcMpUyl_X0t7G1s",
         "status": "trusted",
         "registry": "products/tzar-conductance/author-keys/registry.json"
+      },
+      "release": {
+        "version": "1.0.0",
+        "passport": "products/tzar-conductance/release/TZAR-PRODUCT-001-1.0.0.json",
+        "notes": "products/tzar-conductance/release/RELEASE-1.0.md",
+        "releasedAt": "2026-07-17T13:24:16Z"
+      },
+      "semanticPolicy": {
+        "machineLayer": "advisory-distinction",
+        "authorLayer": "conductance-authority-within-tzar",
+        "thresholdStatus": "operational-not-author-calibrated"
       }
     }
   ]
