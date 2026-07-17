@@ -7,6 +7,14 @@
 1. [**TZAR-DECLARATION-001 — «Осевание»**](../01-declarations/DECLARATION-001-OSEVANIE.md) — версия `1.0.0`, статус `canonical`.
 2. «Архитектоника — актуальное положение» — исходный PDF.
 
+## Аксиомы и инварианты
+
+1. [**TZAR-AXIOM-001 — «Супровый инвариант»**](../02-axioms/AXIOM-001-SUPRA-INVARIANT.md) — версия `1.0.0`, статус `canonical`.
+
+## Теоремы
+
+1. [**TZAR-THEOREM-001 — «Транзитивная проводимость»**](../03-theory/THEOREM-001-TRANSITIVE-CONDUCTANCE.md) — версия `0.1.0`, статус `candidate`.
+
 ## Теоретические работы
 
 1. «Точка как суперпозиция».
