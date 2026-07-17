@@ -1,0 +1,39 @@
+name: Научный конструкт
+description: Предложить аксиому, гипотезу, теорему или оператор ТзАр
+title: "[КОНСТРУКТ] "
+labels: ["scientific-construct", "draft"]
+body:
+  - type: dropdown
+    id: type
+    attributes:
+      label: Тип
+      options:
+        - Декларация
+        - Аксиома
+        - Гипотеза
+        - Теорема
+        - Оператор
+    validations:
+      required: true
+  - type: textarea
+    id: formulation
+    attributes:
+      label: Формулировка
+    validations:
+      required: true
+  - type: textarea
+    id: relations
+    attributes:
+      label: Связи с корпусом
+      description: Укажите работы, термины, геометрии и операторы.
+  - type: textarea
+    id: verification
+    attributes:
+      label: Проверка и ограничения
+      description: Как конструкт может быть проверен или опровергнут?
+  - type: input
+    id: provenance
+    attributes:
+      label: Автор и происхождение
+    validations:
+      required: true
