@@ -118,4 +118,9 @@ assert.equal((await verifyReportSeal(stableRelease)).valid, true);
 assert.equal(stableRelease.version, "1.0.0");
 assert.equal(stableRelease.status, "stable");
 
-console.log("TZAR-PRODUCT-001: 82 assertions passed");
+const firstCheck = JSON.parse(await readFile(new URL("./checks/TZAR-CHECK-001.json", import.meta.url), "utf8"));
+assert.equal((await verifyReportSeal(firstCheck)).valid, true);
+assert.equal(firstCheck.checks.length, 8);
+assert.ok(firstCheck.checks.every((item) => item.result === "PASS"));
+
+console.log("TZAR-PRODUCT-001: 85 assertions passed");
