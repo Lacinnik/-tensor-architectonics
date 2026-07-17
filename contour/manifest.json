@@ -149,8 +149,8 @@
       "title": "TZAR Conductance",
       "path": "products/tzar-conductance/index.html",
       "passport": "05-engineering-applications/TZAR-PRODUCT-001.md",
-      "version": "0.7.0",
-      "status": "calibration-beta",
+      "version": "0.8.0",
+      "status": "author-key-beta",
       "derivedFrom": [
         "TZAR-DECLARATION-001",
         "TZAR-AXIOM-001",
@@ -181,8 +181,14 @@
         "pinned-model-revision",
         "blind-author-review",
         "calibration-corpus",
-        "sealed-calibration-review"
-      ]
+        "sealed-calibration-review",
+        "local-author-key",
+        "encrypted-key-backup",
+        "passport-ecdsa-signature",
+        "public-key-registry",
+        "signature-trust-distinction"
+      ],
+      "authorKeyRegistry": "products/tzar-conductance/author-keys/registry.json"
     }
   ]
 }
