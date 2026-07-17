@@ -80,6 +80,29 @@
       "version": "1.0.0",
       "status": "canonical",
       "canonicalizedAt": "2026-07-17"
+    },
+    {
+      "id": "TZAR-AXIOM-001",
+      "type": "axiom",
+      "title": "Супровый инвариант",
+      "path": "02-axioms/AXIOM-001-SUPRA-INVARIANT.md",
+      "version": "1.0.0",
+      "status": "canonical",
+      "derivedFrom": [
+        "TZAR-DECLARATION-001"
+      ],
+      "canonicalizedAt": "2026-07-17"
+    },
+    {
+      "id": "TZAR-THEOREM-001",
+      "type": "theorem",
+      "title": "Транзитивная проводимость",
+      "path": "03-theory/THEOREM-001-TRANSITIVE-CONDUCTANCE.md",
+      "version": "0.1.0",
+      "status": "candidate",
+      "derivedFrom": [
+        "TZAR-AXIOM-001"
+      ]
     }
   ]
 }
