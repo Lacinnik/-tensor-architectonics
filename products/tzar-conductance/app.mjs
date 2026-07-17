@@ -2,6 +2,8 @@ import { reportMarkdown, sealReport, verifyPayload, verifyReportSeal } from "./c
 import { example } from "./example.mjs";
 import { buildSemanticItems, parseAnchors, semanticReportMarkdown, SEMANTIC_MODEL, SEMANTIC_MODEL_REVISION, SEMANTIC_THRESHOLDS } from "./semantic.mjs";
 import { buildAuthorReview, calibrationSummary, validateCalibrationCorpus } from "./calibration.mjs";
+import { attachAuthorSignature, generateAuthorKey, restoreAuthorKey, verifyAuthorSignature, verifyKeyRegistration } from "./author-key.mjs";
+import { loadAuthorKey, storeAuthorKey } from "./key-vault.mjs";
 
 const fields = ["constructId", "author", "axisTerm", "axisDefinition", "version", "status"];
 const labels = { constructId:"ID конструкта",author:"Автор",axisTerm:"Осевой термин",axisDefinition:"Осевое определение",version:"Версия",status:"Статус" };
@@ -16,6 +18,8 @@ let cancelSemanticJob=null;
 let calibrationCorpus=null;
 let calibrationIndex=0;
 let calibrationDecisions={};
+let activeAuthorKey=null;
+let trustedKeyRegistry={keys:[]};
 const calibrationLabels={preserved:"ПРОВОДИМО",review:"ТРЕБУЕТ РАЗЛИЧЕНИЯ",rupture:"РАЗРЫВ"};
 
 const semanticExample={
@@ -145,6 +149,78 @@ function renderCalibrationCase(){
   renderCalibrationOutput();
 }
 
+function shortFingerprint(value){return value?`${value.slice(0,22)}…${value.slice(-10)}`:"—"}
+
+function renderKeyOutput(message=""){
+  if(!activeAuthorKey){result.innerHTML='<div class="empty">Создайте или восстановите ключ, чтобы подписывать паспорта.</div>';return}
+  const registration=activeAuthorKey.registration;
+  const trusted=trustedKeyRegistry.keys?.some(key=>key.fingerprint===registration.fingerprint&&key.status==="trusted");
+  result.innerHTML=`<div class="summary key-summary"><span class="summary-mark">◇</span><div><small>Авторский ключ</small><strong>${trusted?"ДОВЕРЕН РЕПОЗИТОРИЕМ":"ОЖИДАЕТ ПУБЛИКАЦИИ"}</strong></div></div><div class="key-output"><span>Идентификатор</span><code>${escapeHtml(registration.keyId)}</code><span>Отпечаток SHA-256</span><code title="${escapeHtml(registration.fingerprint)}">${escapeHtml(shortFingerprint(registration.fingerprint))}</code><span>Алгоритм</span><code>${escapeHtml(registration.algorithm)}</code><span>Создан</span><code>${escapeHtml(registration.createdAt)}</code></div>${message?`<div class="method-note"><b>Результат операции</b><p>${escapeHtml(message)}</p></div>`:""}<div class="method-note"><b>Граница доверия</b><p>${trusted?"Открытый ключ найден в доверенном реестре репозитория.":"Подпись уже можно проверить математически, но принадлежность ключа автору будет закреплена после публикации открытой регистрации."}</p></div>`;
+}
+
+function renderKeyState(message=""){
+  const hasKey=Boolean(activeAuthorKey?.privateKey&&activeAuthorKey?.registration);
+  $("#key-state").textContent=hasKey?"ключ активен":"ключ не создан";
+  $("#key-state").classList.toggle("ready",hasKey);
+  $("#key-create-form").hidden=hasKey;
+  $("#export-key-registration").disabled=!hasKey;
+  $("#sign-passport").disabled=!hasKey;
+  $("#key-details").innerHTML=hasKey?`<div class="key-card"><span>ОТКРЫТЫЙ ОТПЕЧАТОК</span><code title="${escapeHtml(activeAuthorKey.registration.fingerprint)}">${escapeHtml(shortFingerprint(activeAuthorKey.registration.fingerprint))}</code><p>Закрытая часть хранится неизвлекаемо в хранилище этого браузера.</p></div>`:'<div class="empty">Авторский ключ ещё не создан в этом браузере.</div>';
+  if(document.body.dataset.mode==="author-key")renderKeyOutput(message);
+}
+
+async function loadKeyEnvironment(){
+  try{const response=await fetch("./author-keys/registry.json");if(response.ok)trustedKeyRegistry=await response.json()}catch{}
+  try{activeAuthorKey=await loadAuthorKey()||null}catch{activeAuthorKey=null}
+  renderKeyState();
+}
+
+async function generateKeyFromForm(){
+  const pass=$("#key-passphrase").value;
+  const repeated=$("#key-passphrase-repeat").value;
+  if(pass!==repeated)throw new Error("Кодовые фразы не совпадают");
+  setStatus("Создание и шифрование ключа…","work");
+  const generated=await generateAuthorKey(pass);
+  activeAuthorKey={privateKey:generated.privateKey,registration:generated.registration};
+  await storeAuthorKey(activeAuthorKey);
+  download("tzar-author-key-001.encrypted-backup.json",JSON.stringify(generated.backup,null,2),"application/json");
+  $("#key-passphrase").value="";$("#key-passphrase-repeat").value="";
+  renderKeyState("Ключ создан. Зашифрованная резервная копия выгружена автоматически — сохраните её вне браузера.");
+  setStatus("Авторский ключ создан","pass");
+}
+
+async function restoreKeyFromBackup(file){
+  const pass=$("#key-passphrase").value;
+  const backup=JSON.parse(await file.text());
+  setStatus("Расшифрование резервной копии…","work");
+  const restored=await restoreAuthorKey(backup,pass);
+  activeAuthorKey={privateKey:restored.privateKey,registration:restored.registration};
+  await storeAuthorKey(activeAuthorKey);
+  $("#key-passphrase").value="";$("#key-passphrase-repeat").value="";
+  renderKeyState("Ключ восстановлен и сохранён как неизвлекаемый ключ этого браузера.");
+  setStatus("Авторский ключ восстановлен","pass");
+}
+
+async function signPassportFile(file){
+  const passport=JSON.parse(await file.text());
+  const sealCheck=await verifyReportSeal(passport);
+  if(!sealCheck.valid)throw new Error(`Паспорт не подписан: ${sealCheck.reason}`);
+  const signed=await attachAuthorSignature(passport,activeAuthorKey.privateKey,activeAuthorKey.registration);
+  const name=file.name.replace(/\.json$/i,"")||"tzar-passport";
+  download(`${name}.signed.json`,JSON.stringify(signed,null,2),"application/json");
+  renderKeyOutput("Паспорт подписан. Подпись охватывает его контрольную печать и метаданные авторского ключа.");
+  setStatus("Паспорт подписан","pass");
+}
+
+async function verifySignedPassportFile(file){
+  const passport=JSON.parse(await file.text());
+  const sealCheck=await verifyReportSeal(passport);
+  const signatureCheck=await verifyAuthorSignature(passport);
+  const trusted=signatureCheck.valid&&trustedKeyRegistry.keys?.some(key=>key.fingerprint===signatureCheck.fingerprint&&key.status==="trusted");
+  result.innerHTML=`<div class="signature-verification ${sealCheck.valid&&signatureCheck.valid?"pass":"fail"}"><span>${sealCheck.valid&&signatureCheck.valid?"◇":"×"}</span><div><small>ПРОВЕРКА АВТОРСТВА</small><strong>${!sealCheck.valid?"ПАСПОРТ ИЗМЕНЁН":!signatureCheck.valid?"ПОДПИСЬ НЕВЕРНА":trusted?"ПОДПИСЬ ДОВЕРЕНА":"ПОДПИСЬ ВЕРНА · КЛЮЧ НЕ ЗАРЕГИСТРИРОВАН"}</strong><p>${escapeHtml(signatureCheck.reason)}</p><code>${escapeHtml(shortFingerprint(signatureCheck.fingerprint))}</code></div></div>`;
+  setStatus(sealCheck.valid&&signatureCheck.valid?trusted?"Подпись доверена":"Ключ ожидает регистрации":"Проверка не пройдена",sealCheck.valid&&signatureCheck.valid?trusted?"pass":"review":"fail");
+}
+
 function chooseCalibration(label){
   if(!calibrationCorpus)return;
   calibrationDecisions[calibrationCorpus.cases[calibrationIndex].id]=label;
@@ -207,7 +283,7 @@ async function run(payload=payloadFromBuilder()){
   try{setStatus("Проверка…","work");currentReport=await verifyPayload(payload);currentReportKind="structural";render(currentReport);enableExports();input.value=JSON.stringify(payload,null,2);saveDraft();setStatus(currentReport.pass?"Контур проводим":"Контур разорван",currentReport.pass?"pass":"fail")}
   catch(error){currentReport=null;result.innerHTML=`<div class="error"><strong>Невозможно выполнить проверку</strong><p>${escapeHtml(error.message)}</p></div>`;exportJson.disabled=true;exportMarkdown.disabled=true;setStatus("Ошибка входа","fail")}
 }
-function switchMode(mode){document.body.dataset.mode=mode;document.querySelectorAll(".mode").forEach(b=>b.classList.toggle("active",b.dataset.mode===mode));$("#output-title").textContent=mode==="semantic"?"Карта смысловой проводимости":mode==="calibration"?"Карта авторского обзора":"Карта структурной проводимости";if(mode==="json")input.value=JSON.stringify(payloadFromBuilder(),null,2);if(mode==="calibration"){exportJson.disabled=true;exportMarkdown.disabled=true;renderCalibrationCase()}}
+function switchMode(mode){document.body.dataset.mode=mode;document.querySelectorAll(".mode").forEach(b=>b.classList.toggle("active",b.dataset.mode===mode));$("#output-title").textContent=mode==="semantic"?"Карта смысловой проводимости":mode==="calibration"?"Карта авторского обзора":mode==="author-key"?"Контур авторской подписи":"Карта структурной проводимости";if(mode==="json")input.value=JSON.stringify(payloadFromBuilder(),null,2);if(mode==="calibration"){exportJson.disabled=true;exportMarkdown.disabled=true;renderCalibrationCase()}if(mode==="author-key"){exportJson.disabled=true;exportMarkdown.disabled=true;renderKeyOutput()}}
 
 $("#verify").onclick=()=>run();
 $("#analyze-semantic").onclick=()=>cancelSemanticJob?cancelSemanticJob():runSemantic();
@@ -222,6 +298,14 @@ $("#export-calibration").onclick=async()=>{
   download("tzar-calibration-001-author-review.json",JSON.stringify(review,null,2),"application/json");
   setStatus("Авторские решения экспортированы","pass");
 };
+$("#generate-author-key").onclick=async()=>{try{await generateKeyFromForm()}catch(error){setStatus("Ключ не создан","fail");renderKeyOutput(error.message)}};
+$("#restore-author-key").onclick=()=>$("#key-backup-file").click();
+$("#key-backup-file").onchange=async()=>{const file=$("#key-backup-file").files[0];if(!file)return;try{await restoreKeyFromBackup(file)}catch(error){setStatus("Восстановление не выполнено","fail");renderKeyOutput(error.message)}finally{$("#key-backup-file").value=""}};
+$("#export-key-registration").onclick=async()=>{if(!activeAuthorKey)return;const valid=await verifyKeyRegistration(activeAuthorKey.registration);if(!valid){renderKeyOutput("Регистрация не прошла внутреннюю проверку владения ключом.");return}download("tzar-author-key-001.public-registration.json",JSON.stringify(activeAuthorKey.registration,null,2),"application/json");renderKeyOutput("Открытая регистрация экспортирована. В ней нет закрытого ключа или кодовой фразы.")};
+$("#sign-passport").onclick=()=>$("#sign-passport-file").click();
+$("#sign-passport-file").onchange=async()=>{const file=$("#sign-passport-file").files[0];if(!file)return;try{await signPassportFile(file)}catch(error){setStatus("Подпись не создана","fail");renderKeyOutput(error.message)}finally{$("#sign-passport-file").value=""}};
+$("#verify-signature").onclick=()=>$("#verify-signature-file").click();
+$("#verify-signature-file").onchange=async()=>{const file=$("#verify-signature-file").files[0];if(!file)return;try{await verifySignedPassportFile(file)}catch(error){setStatus("Файл не проверен","fail");renderKeyOutput(error.message)}finally{$("#verify-signature-file").value=""}};
 $("#verify-json").onclick=()=>{try{const payload=JSON.parse(input.value);loadBuilder(payload);run(payload)}catch(error){setStatus("Ошибка JSON","fail");result.innerHTML=`<div class="error"><strong>JSON не прочитан</strong><p>${escapeHtml(error.message)}</p></div>`}};
 $("#example").onclick=()=>{loadBuilder(structuredClone(example));run()};
 $("#reset").onclick=()=>{loadBuilder(structuredClone(example));setStatus("Пример восстановлен")};
@@ -257,3 +341,4 @@ currentReport=null;exportJson.disabled=true;exportMarkdown.disabled=true;
 result.innerHTML='<div class="empty">Исходная мысль и три преобразования уже загружены. Запустите смысловую проверку.</div>';
 setStatus("Смысловой контур готов","idle");
 loadCalibrationCorpus();
+loadKeyEnvironment();
