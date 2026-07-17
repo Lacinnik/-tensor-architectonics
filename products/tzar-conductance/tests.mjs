@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { example } from "./example.mjs";
 import { extractInvariant, verifyPayload, verifyReportSeal } from "./core.mjs";
-import { buildSemanticItems, classifySemantic, cosineSimilarity, inspectAnchors, parseAnchors } from "./semantic.mjs";
+import { buildSemanticItems, chunkSemanticText, classifySemantic, cosineSimilarity, detectLogicRisks, inspectAnchors, lexicalDifference, meanNormalizedVector, parseAnchors, SEMANTIC_MODEL_REVISION } from "./semantic.mjs";
 
 const report = await verifyPayload(example);
 assert.equal(report.pass, true);
@@ -44,5 +44,20 @@ assert.equal(classifySemantic(0.99, inspectAnchors("другой текст", ["
 const semanticItems = buildSemanticItems("Источник", [{ label: "A", text: "опора" }], [[1, 0], [0.8, 0.2]], ["опора"]);
 assert.equal(semanticItems.length, 1);
 assert.equal(semanticItems[0].verdict.code, "preserved");
+assert.equal(detectLogicRisks("Теория может работать", "Теория может работать").length, 0);
+const negationRisk = detectLogicRisks("Метод работает", "Метод не работает");
+assert.equal(negationRisk[0].code, "negation");
+assert.equal(negationRisk[0].severity, "critical");
+assert.ok(detectLogicRisks("Это гипотеза", "Это доказанный факт").length >= 2);
+assert.deepEqual(lexicalDifference("осевой термин сохраняется", "осевой термин исчезает").removed, ["сохраняется"]);
+assert.deepEqual(lexicalDifference("осевой термин сохраняется", "осевой термин исчезает").added, ["исчезает"]);
+assert.equal(chunkSemanticText("Короткий текст.").length, 1);
+assert.equal(chunkSemanticText("а".repeat(1000), 400).length, 3);
+assert.equal(chunkSemanticText("Первая мысль. Вторая мысль.", 18).length, 2);
+assert.deepEqual(meanNormalizedVector([[1, 0], [1, 0]]), [1, 0]);
+const logicalItem = buildSemanticItems("Метод работает", [{ label: "Инверсия", text: "Метод не работает" }], [[1, 0], [1, 0]], []);
+assert.equal(logicalItem[0].verdict.code, "logical-risk");
+assert.equal(logicalItem[0].logicRisks[0].code, "negation");
+assert.equal(SEMANTIC_MODEL_REVISION.length, 40);
 
-console.log("TZAR-PRODUCT-001: 32 assertions passed");
+console.log("TZAR-PRODUCT-001: 46 assertions passed");
