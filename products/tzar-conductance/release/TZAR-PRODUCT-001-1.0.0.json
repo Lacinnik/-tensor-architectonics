@@ -1,0 +1,41 @@
+{
+  "schema": "tzar-product-release/1.0.0",
+  "product": "TZAR-PRODUCT-001",
+  "title": "TZAR Conductance",
+  "version": "1.0.0",
+  "status": "stable",
+  "releasedAt": "2026-07-17T13:24:16Z",
+  "author": "Александр Лацинник",
+  "authorKey": {
+    "keyId": "TZAR-AUTHOR-KEY-001",
+    "fingerprint": "sha256:Ynjlrfr7-2Ce9ck9RrTZgOo6lXcqwcMpUyl_X0t7G1s",
+    "registryStatus": "trusted"
+  },
+  "calibration": {
+    "corpusId": "TZAR-CALIBRATION-001",
+    "review": "../calibration/author-review.v1.json",
+    "status": "author-reviewed",
+    "decisions": 12,
+    "labels": {
+      "preserved": 12,
+      "review": 0,
+      "rupture": 0
+    }
+  },
+  "semanticPolicy": {
+    "machineLayer": "advisory-distinction",
+    "authorLayer": "conductance-authority-within-tzar",
+    "contradictionPolicy": "A contradiction or impossibility of manifested forms does not by itself establish rupture of the supra invariant.",
+    "thresholdStatus": "operational-not-author-calibrated"
+  },
+  "capabilities": [
+    "structural-conductance",
+    "semantic-model-audit",
+    "logic-risk-signals",
+    "blind-calibration-review",
+    "sealed-passports",
+    "trusted-author-signatures"
+  ],
+  "sealAlgorithm": "SHA-256",
+  "seal": "beda0081129d2a7892a8f93b3d4794fc5d005b286cfb5d1b9f186e48a6d7cd27"
+}
