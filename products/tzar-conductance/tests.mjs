@@ -109,4 +109,13 @@ assert.equal(keyRegistry.keys[0].status, "trusted");
 assert.equal(keyRegistry.keys[0].fingerprint, trustedRegistration.fingerprint);
 assert.equal(JSON.stringify(trustedRegistration).includes("encryptedPkcs8"), false);
 
-console.log("TZAR-PRODUCT-001: 76 assertions passed");
+const publishedReview = JSON.parse(await readFile(new URL("./calibration/author-review.v1.json", import.meta.url), "utf8"));
+const stableRelease = JSON.parse(await readFile(new URL("./release/TZAR-PRODUCT-001-1.0.0.json", import.meta.url), "utf8"));
+assert.equal((await verifyReportSeal(publishedReview)).valid, true);
+assert.equal(publishedReview.decisions.length, 12);
+assert.ok(publishedReview.decisions.every((item) => item.label === "preserved"));
+assert.equal((await verifyReportSeal(stableRelease)).valid, true);
+assert.equal(stableRelease.version, "1.0.0");
+assert.equal(stableRelease.status, "stable");
+
+console.log("TZAR-PRODUCT-001: 82 assertions passed");
