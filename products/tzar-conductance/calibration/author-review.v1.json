@@ -1,0 +1,33 @@
+{
+  "schema": "tzar-semantic-calibration-review/1.0.0",
+  "corpusId": "TZAR-CALIBRATION-001",
+  "corpusSchema": "tzar-semantic-calibration-corpus/1.0.0",
+  "status": "author-reviewed",
+  "author": "Александр Лацинник",
+  "reviewedAt": "2026-07-17T13:17:55.013Z",
+  "decisions": [
+    { "caseId": "CAL-DECL-001-P", "label": "preserved", "candidateLabel": "preserved", "agreesWithCandidate": true },
+    { "caseId": "CAL-DECL-001-R", "label": "preserved", "candidateLabel": "review", "agreesWithCandidate": false },
+    { "caseId": "CAL-DECL-001-X", "label": "preserved", "candidateLabel": "rupture", "agreesWithCandidate": false },
+    { "caseId": "CAL-AX-001-P", "label": "preserved", "candidateLabel": "preserved", "agreesWithCandidate": true },
+    { "caseId": "CAL-AX-001-R", "label": "preserved", "candidateLabel": "review", "agreesWithCandidate": false },
+    { "caseId": "CAL-AX-001-X", "label": "preserved", "candidateLabel": "rupture", "agreesWithCandidate": false },
+    { "caseId": "CAL-TH-001-P", "label": "preserved", "candidateLabel": "preserved", "agreesWithCandidate": true },
+    { "caseId": "CAL-TH-001-R", "label": "preserved", "candidateLabel": "review", "agreesWithCandidate": false },
+    { "caseId": "CAL-TH-001-X", "label": "preserved", "candidateLabel": "rupture", "agreesWithCandidate": false },
+    { "caseId": "CAL-METRIC-001-P", "label": "preserved", "candidateLabel": "preserved", "agreesWithCandidate": true },
+    { "caseId": "CAL-METRIC-001-R", "label": "preserved", "candidateLabel": "review", "agreesWithCandidate": false },
+    { "caseId": "CAL-METRIC-001-X", "label": "preserved", "candidateLabel": "rupture", "agreesWithCandidate": false }
+  ],
+  "summary": {
+    "total": 12,
+    "reviewed": 12,
+    "remaining": 0,
+    "agreement": 4,
+    "agreementRate": 0.3333333333333333,
+    "labels": { "preserved": 12, "review": 0, "rupture": 0 },
+    "complete": true
+  },
+  "sealAlgorithm": "SHA-256",
+  "seal": "7d804921b0db3079950f92c8e020849de7a569e7ecca88251c4eae6344cc3771"
+}
