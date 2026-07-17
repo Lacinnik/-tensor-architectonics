@@ -18,4 +18,4 @@
 
 ## Первый аксиоматический кандидат
 
-- [TZAR-AXIOM-001 — «Супровый инвариант»](AXIOM-001-SUPRA-INVARIANT.md) — версия `0.1.0`, статус `candidate`.
+- [TZAR-AXIOM-001 — «Супровый инвариант»](AXIOM-001-SUPRA-INVARIANT.md) — версия `1.0.0`, статус `canonical`.
