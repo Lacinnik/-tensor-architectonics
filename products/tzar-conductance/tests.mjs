@@ -101,4 +101,12 @@ const algorithmTamper = structuredClone(signedReport);
 algorithmTamper.authorSignature.algorithm = "UNTRUSTED";
 assert.equal((await verifyAuthorSignature(algorithmTamper)).valid, false);
 
-console.log("TZAR-PRODUCT-001: 71 assertions passed");
+const trustedRegistration = JSON.parse(await readFile(new URL("./author-keys/TZAR-AUTHOR-KEY-001.registration.json", import.meta.url), "utf8"));
+const keyRegistry = JSON.parse(await readFile(new URL("./author-keys/registry.json", import.meta.url), "utf8"));
+assert.equal(await verifyKeyRegistration(trustedRegistration), true);
+assert.equal(keyRegistry.keys.length, 1);
+assert.equal(keyRegistry.keys[0].status, "trusted");
+assert.equal(keyRegistry.keys[0].fingerprint, trustedRegistration.fingerprint);
+assert.equal(JSON.stringify(trustedRegistration).includes("encryptedPkcs8"), false);
+
+console.log("TZAR-PRODUCT-001: 76 assertions passed");
