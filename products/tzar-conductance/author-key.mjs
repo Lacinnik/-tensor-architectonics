@@ -81,7 +81,7 @@ function registrationPayload(registration) {
 }
 
 function signaturePayload(seal, metadata) {
-  return `${SIGN_DOMAIN}\n${stableString({ seal, schema: metadata.schema, keyId: metadata.keyId, fingerprint: metadata.fingerprint, author: metadata.author, signedAt: metadata.signedAt })}`;
+  return `${SIGN_DOMAIN}\n${stableString({ seal, schema: metadata.schema, keyId: metadata.keyId, fingerprint: metadata.fingerprint, author: metadata.author, algorithm: metadata.algorithm, signedAt: metadata.signedAt })}`;
 }
 
 export async function generateAuthorKey(passphrase, options = {}) {
@@ -119,6 +119,7 @@ export async function generateAuthorKey(passphrase, options = {}) {
 
 export async function restoreAuthorKey(backup, passphrase) {
   if (backup?.schema !== "tzar-author-key-backup/1.0.0") throw new Error("Неизвестный формат резервной копии");
+  if (backup.algorithm !== AUTHOR_KEY_ALGORITHM) throw new Error("Алгоритм резервной копии не поддерживается");
   const fingerprint = await publicKeyFingerprint(backup.publicKeyJwk);
   if (fingerprint !== backup.fingerprint) throw new Error("Открытый ключ резервной копии не соответствует отпечатку");
   const pkcs8 = await decryptPrivateKey(backup, passphrase);
@@ -140,6 +141,7 @@ export async function restoreAuthorKey(backup, passphrase) {
 
 export async function verifyKeyRegistration(registration) {
   if (registration?.schema !== "tzar-author-key-registration/1.0.0") return false;
+  if (registration.algorithm !== AUTHOR_KEY_ALGORITHM) return false;
   const fingerprint = await publicKeyFingerprint(registration.publicKeyJwk);
   if (fingerprint !== registration.fingerprint) return false;
   const publicKey = await globalThis.crypto.subtle.importKey("jwk", registration.publicKeyJwk, { name: "ECDSA", namedCurve: "P-256" }, true, ["verify"]);
@@ -164,6 +166,7 @@ export async function attachAuthorSignature(report, privateKey, registration) {
 export async function verifyAuthorSignature(report) {
   const signature = report?.authorSignature;
   if (!signature?.value || !signature?.publicKeyJwk || !report?.seal) return { valid: false, reason: "Авторская подпись отсутствует" };
+  if (signature.algorithm !== AUTHOR_KEY_ALGORITHM) return { valid: false, reason: "Алгоритм авторской подписи не поддерживается" };
   const fingerprint = await publicKeyFingerprint(signature.publicKeyJwk);
   if (fingerprint !== signature.fingerprint) return { valid: false, reason: "Отпечаток открытого ключа не совпадает" };
   const publicKey = await globalThis.crypto.subtle.importKey("jwk", signature.publicKeyJwk, { name: "ECDSA", namedCurve: "P-256" }, true, ["verify"]);
