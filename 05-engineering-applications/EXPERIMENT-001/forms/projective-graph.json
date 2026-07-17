@@ -1,0 +1,36 @@
+{
+  "experiment": "TZAR-EXPERIMENT-001",
+  "representation": {
+    "geometry": "Projective",
+    "model": "relation-graph",
+    "nodes": [
+      "subject",
+      "structure",
+      "supra",
+      "existence"
+    ],
+    "edges": [
+      [
+        "subject",
+        "structure"
+      ],
+      [
+        "structure",
+        "supra"
+      ],
+      [
+        "supra",
+        "existence"
+      ]
+    ],
+    "perspective": "axis"
+  },
+  "invariant": {
+    "constructId": "TZAR-DECLARATION-001",
+    "author": "Александр Лацинник",
+    "axisTerm": "осевание",
+    "axisDefinition": "Осевание — приведение субъектной структуры в состояние, при котором супра становится сущей.",
+    "version": "1.0.0",
+    "status": "canonical"
+  }
+}
