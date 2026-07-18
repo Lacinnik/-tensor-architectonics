@@ -162,7 +162,7 @@
       "path": "05-engineering-applications/QENGINE-001/README.md",
       "version": "0.2.0",
       "status": "candidate",
-      "reviewStage": "author-review",
+      "reviewStage": "author-reviewed",
       "derivedFrom": [
         "TZAR-DECLARATION-001",
         "TZAR-DECLARATION-002",
