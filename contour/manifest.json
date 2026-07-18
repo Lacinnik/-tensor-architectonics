@@ -82,6 +82,20 @@
       "canonicalizedAt": "2026-07-17"
     },
     {
+      "id": "TZAR-DECLARATION-002",
+      "type": "declaration",
+      "title": "Рефлексивная масштабная готовность",
+      "path": "01-declarations/DECLARATION-002-REFLEXIVE-SCALE-READINESS.md",
+      "version": "0.1.0",
+      "status": "canonical",
+      "derivedFrom": [
+        "TZAR-DECLARATION-001",
+        "TZAR-AXIOM-001",
+        "TZAR-THEOREM-001"
+      ],
+      "canonicalizedAt": "2026-07-18"
+    },
+    {
       "id": "TZAR-AXIOM-001",
       "type": "axiom",
       "title": "Супровый инвариант",
@@ -92,6 +106,24 @@
         "TZAR-DECLARATION-001"
       ],
       "canonicalizedAt": "2026-07-17"
+    },
+    {
+      "id": "TZAR-AXIOMATICS-001",
+      "type": "axiomatic-framework",
+      "title": "Пять геометрических режимов и Супра-сектор",
+      "path": "02-axioms/AXIOMATICS-001-FIVE-GEOMETRIES-AND-SUPRA.md",
+      "version": "0.1",
+      "status": "canonical",
+      "derivedFrom": [
+        "TZAR-AXIOM-001"
+      ],
+      "relatedTo": [
+        "TZAR-DECLARATION-001",
+        "TZAR-DECLARATION-002",
+        "TZAR-MATH-001",
+        "TZAR-THEOREM-001"
+      ],
+      "canonicalizedAt": "2026-07-18"
     },
     {
       "id": "TZAR-THEOREM-001",
@@ -108,6 +140,52 @@
         "TZAR-EXPERIMENT-001"
       ],
       "canonicalizedAt": "2026-07-17"
+    },
+    {
+      "id": "TZAR-MATH-001",
+      "type": "mathematical-apparatus",
+      "title": "Математический аппарат Тензорной Архитектоники",
+      "path": "04-mathematical-apparatus/MATH-001.md",
+      "version": "1.0",
+      "status": "canonical",
+      "derivedFrom": [
+        "TZAR-DECLARATION-001",
+        "TZAR-AXIOM-001",
+        "TZAR-THEOREM-001"
+      ],
+      "canonicalizedAt": "2026-07-18"
+    },
+    {
+      "id": "TZAR-QENGINE-001",
+      "type": "engine-specification",
+      "title": "Авторские квантовые движки",
+      "path": "05-engineering-applications/QENGINE-001/README.md",
+      "version": "0.2.0",
+      "status": "candidate",
+      "reviewStage": "author-review",
+      "derivedFrom": [
+        "TZAR-DECLARATION-001",
+        "TZAR-DECLARATION-002",
+        "TZAR-AXIOM-001",
+        "TZAR-AXIOMATICS-001",
+        "TZAR-THEOREM-001",
+        "TZAR-MATH-001"
+      ],
+      "engineIds": [
+        "QP-01",
+        "QR-01",
+        "QG-01",
+        "QA-01",
+        "QC-01",
+        "QI-01"
+      ],
+      "applicability": [
+        "TzArch Runtime",
+        "Saver"
+      ],
+      "runtimeStatus": "specified-not-implemented",
+      "securityProfileStatus": "required-not-defined",
+      "verifiedBy": []
     },
     {
       "id": "TZAR-EXPERIMENT-001",
