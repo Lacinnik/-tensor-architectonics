@@ -3,7 +3,7 @@ id: TZAR-AXIOM-001
 title: Супровый инвариант
 author: Александр Лацинник
 status: canonical
-version: 0.1.0
+version: 1.0.0
 derived_from:
   - TZAR-DECLARATION-001
 fixed_at: 2026-07-17
