@@ -16,7 +16,7 @@
 3. [Аксиома 001 — «Супровый инвариант»](02-axioms/AXIOM-001-SUPRA-INVARIANT.md) — `canonical`.
 4. [Аксиоматика 001 — «Пять геометрических режимов и Супра-сектор»](02-axioms/AXIOMATICS-001-FIVE-GEOMETRIES-AND-SUPRA.md) — `canonical`.
 5. [Математический аппарат 001](04-mathematical-apparatus/MATH-001.md) — `canonical`.
-6. [Авторские квантовые движки](05-engineering-applications/QENGINE-001/) — `candidate`, стадия `author-review`.
+6. [Авторские квантовые движки](05-engineering-applications/QENGINE-001/) — `candidate`, стадия `author-reviewed`.
 7. [Теорема 001 — «Транзитивная проводимость»](03-theory/THEOREM-001-TRANSITIVE-CONDUCTANCE.md) — `canonical`.
 
 ## Первый цифровой продукт
