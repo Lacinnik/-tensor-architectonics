@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="ru">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#071529"><meta name="description" content="TZAR-QENGINE — эталонный кандидат runtime для шести авторских движков Тензорной Архитектоники."><title>TZAR-QENGINE · Reference Candidate</title><link rel="stylesheet" href="./styles.css"></head>
+<body>
+  <div class="orb orb-a"></div><div class="orb orb-b"></div>
+  <main>
+    <header><a href="../" class="brand"><span>Q</span><div><b>TZAR-QENGINE</b><small>REFERENCE CANDIDATE · 0.1</small></div></a><div class="status" id="status">fail-closed контур готов</div></header>
+    <section class="hero"><p class="eyebrow">ТЕНЗОРНАЯ АРХИТЕКТОНИКА · ШЕСТЬ ДВИЖКОВ</p><h1>Успешное вычисление<br>ещё не означает <em>preserved.</em></h1><p>Испытательный стенд исполняет единый контракт EngineResult и закрывает операцию при отсутствии обязательного свидетельства.</p></section>
+    <nav class="engine-nav" id="engine-nav" aria-label="Выбор движка"></nav>
+    <section class="workspace">
+      <article class="panel input-panel"><div class="panel-head"><div><small>01 · КОНТРАКТ</small><h2 id="engine-title">QP-01 · Point Engine</h2></div><button id="load-example" class="ghost">Эталонный вход</button></div><label><span>Request</span><textarea id="request" spellcheck="false"></textarea></label><label><span>Context</span><textarea id="context" spellcheck="false"></textarea></label><label><span>Policy</span><textarea id="policy" spellcheck="false"></textarea></label><button id="run" class="primary"><span>Исполнить fail-closed</span><b>→</b></button></article>
+      <article class="panel output-panel"><div class="panel-head"><div><small>02 · ENGINE RESULT</small><h2>Проверяемый результат</h2></div><button id="export" class="ghost" disabled>JSON</button></div><div id="summary" class="empty">Выберите движок и исполните эталонный вход.</div><pre id="result"></pre><div class="boundary"><span>ГРАНИЦА</span><p>Runtime не выполняет криптографию, аутентификацию или скрытую диагностику. Он принимает только явно предъявленные свидетельства внешних механизмов и сохраняет статус candidate.</p></div></article>
+    </section>
+    <footer><span>TZAR-QENGINE-001 · RUNTIME 0.1 RC · 2026</span><p>Шесть операторов · единый результат · отказ по умолчанию.</p></footer>
+  </main><script type="module" src="./app.mjs"></script>
+</body></html>
