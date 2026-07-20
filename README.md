@@ -33,6 +33,15 @@
 
 [**TZAR-CHECK-001 — первая операционная проверка**](05-engineering-applications/CHECK-001/README.md) · результат `PASS` · 8/8 проверок.
 
+## QENGINE reference candidate
+
+[**Публичный испытательный стенд**](https://lacinnik.github.io/-tensor-architectonics/qengine/) исполняет шесть движков `QP-01`–`QI-01` по единому контракту `EngineResult`.
+
+- корпус: `TZAR-QENGINE-001 v0.2.0` · `candidate` · `author-reviewed`;
+- runtime: `0.1.0-rc.1` · `reference-candidate`;
+- автоматическая проверка: 35 утверждений, включая fail-closed отказы и границы внешней криптографии;
+- статус не является `verified` или `canonical`.
+
 ## Резонансный контур
 
 Репозиторий организован не только как архив работ, но и как проводящая научная среда:
