@@ -4,10 +4,13 @@ on:
   push:
     paths:
       - "products/tzar-conductance/**"
+      - "05-engineering-applications/QENGINE-001/**"
       - ".github/workflows/product-001-test.yml"
   pull_request:
     paths:
       - "products/tzar-conductance/**"
+      - "05-engineering-applications/QENGINE-001/**"
+      - ".github/workflows/product-001-test.yml"
   workflow_dispatch:
 
 permissions:
