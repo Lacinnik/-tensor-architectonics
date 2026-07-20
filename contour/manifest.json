@@ -183,7 +183,7 @@
         "TzArch Runtime",
         "Saver"
       ],
-      "runtimeStatus": "specified-not-implemented",
+      "runtimeStatus": "reference-candidate",
       "securityProfileStatus": "required-not-defined",
       "verifiedBy": []
     },

@@ -4,10 +4,13 @@ on:
   push:
     paths:
       - "products/tzar-conductance/**"
+      - "05-engineering-applications/QENGINE-001/**"
       - ".github/workflows/product-001-test.yml"
   pull_request:
     paths:
       - "products/tzar-conductance/**"
+      - "05-engineering-applications/QENGINE-001/**"
+      - ".github/workflows/product-001-test.yml"
   workflow_dispatch:
 
 permissions:
@@ -31,5 +34,9 @@ jobs:
           node --check products/tzar-conductance/calibration.mjs
           node --check products/tzar-conductance/author-key.mjs
           node --check products/tzar-conductance/key-vault.mjs
+          node --check products/tzar-conductance/qengine/qengine.mjs
+          node --check products/tzar-conductance/qengine/app.mjs
       - name: Run product tests
-        run: node products/tzar-conductance/tests.mjs
+        run: |
+          node products/tzar-conductance/tests.mjs
+          node 05-engineering-applications/QENGINE-001/runtime/tests.mjs
