@@ -258,3 +258,60 @@
         "visual-builder",
         "field-difference-map",
         "local-draft",
+        "json-professional-mode",
+        "transition-ledger",
+        "first-break-detection",
+        "provenance-passport",
+        "report-control-seal",
+        "external-passport-verification",
+        "local-semantic-embeddings",
+        "critical-anchor-control",
+        "semantic-range-calibration",
+        "semantic-passport",
+        "logic-risk-detector",
+        "lexical-difference-map",
+        "long-text-chunking",
+        "semantic-web-worker",
+        "semantic-draft",
+        "pinned-model-revision",
+        "blind-author-review",
+        "calibration-corpus",
+        "sealed-calibration-review",
+        "local-author-key",
+        "encrypted-key-backup",
+        "passport-ecdsa-signature",
+        "public-key-registry",
+        "signature-trust-distinction"
+      ],
+      "authorKey": {
+        "keyId": "TZAR-AUTHOR-KEY-001",
+        "fingerprint": "sha256:Ynjlrfr7-2Ce9ck9RrTZgOo6lXcqwcMpUyl_X0t7G1s",
+        "status": "trusted",
+        "registry": "products/tzar-conductance/author-keys/registry.json"
+      },
+      "release": {
+        "version": "1.0.0",
+        "passport": "products/tzar-conductance/release/TZAR-PRODUCT-001-1.0.0.json",
+        "notes": "products/tzar-conductance/release/RELEASE-1.0.md",
+        "releasedAt": "2026-07-17T13:24:16Z"
+      },
+      "semanticPolicy": {
+        "machineLayer": "advisory-distinction",
+        "authorLayer": "conductance-authority-within-tzar",
+        "thresholdStatus": "operational-not-author-calibrated"
+      }
+    },
+    {
+      "id": "TZAR-CHECK-001",
+      "type": "operational-check",
+      "title": "Первая операционная проверка TZAR Conductance 1.0",
+      "path": "05-engineering-applications/CHECK-001/README.md",
+      "passport": "products/tzar-conductance/checks/TZAR-CHECK-001.json",
+      "target": "TZAR-PRODUCT-001@1.0.0",
+      "result": "PASS",
+      "checkCount": 8,
+      "executedAt": "2026-07-17T13:31:57Z",
+      "seal": "c2e944497fd6d93dd2f776508ffc3ac6926474df32652deb764fff96f6d90c1b"
+    }
+  ]
+}
