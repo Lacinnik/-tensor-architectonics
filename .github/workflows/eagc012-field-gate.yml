@@ -1,0 +1,32 @@
+name: EAGC-012 Field Gate
+
+on:
+  push:
+    branches:
+      - agent/eagc012-data-gate
+    paths:
+      - 'tools/eagc012/**'
+      - '.github/workflows/eagc012-field-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  field-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run gate
+        run: python tools/eagc012/run_gate.py
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: eagc012-field-gate
+          path: artifacts/eagc012
+          if-no-files-found: error
