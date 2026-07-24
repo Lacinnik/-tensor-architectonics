@@ -1,0 +1,42 @@
+name: EAGC-012 Field Gate
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+    branches:
+      - main
+    paths:
+      - 'tools/eagc012/**'
+      - '.github/workflows/eagc012-field-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  field-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run unit tests
+        run: python -m unittest discover -s tools/eagc012 -p 'test_*.py'
+      - name: Run gate
+        run: python tools/eagc012/run_gate.py
+        env:
+          EAGC_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: eagc012-field-gate
+          path: artifacts/eagc012
+          if-no-files-found: error
