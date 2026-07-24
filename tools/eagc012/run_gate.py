@@ -1,36 +1,63 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 import math
 import os
+import shutil
 import statistics
 import urllib.request
-from dataclasses import dataclass
-from datetime import datetime, timezone
+from collections import Counter
+from dataclasses import dataclass, fields
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import Any
 
-BASE = "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min"
+
+ROOT = Path(__file__).resolve().parent
+POLICY_PATH = ROOT / "policy.json"
 OUT = Path(os.environ.get("EAGC_OUT", "artifacts/eagc012"))
-OUT.mkdir(parents=True, exist_ok=True)
 
-EVENTS = [
-    ("E2001-0331", "200103", "2001-03-29T00:00:00Z", "2001-04-01T23:59:00Z"),
-    ("E2004-1108", "200411", "2004-11-06T00:00:00Z", "2004-11-10T23:59:00Z"),
-    ("E2005-0515", "200505", "2005-05-13T00:00:00Z", "2005-05-16T23:59:00Z"),
-    ("E2015-0622", "201506", "2015-06-20T00:00:00Z", "2015-06-24T23:59:00Z"),
-]
-
-# Official HRO 1-minute columns, zero-based after whitespace splitting.
+# Official High Resolution OMNI 1-minute ASCII columns, zero-based.
 IDX = {
-    "year": 0, "doy": 1, "hour": 2, "minute": 3,
-    "bmag": 13, "bz": 18, "speed": 21, "density": 25,
-    "pressure": 27, "ae": 37, "al": 38, "symh": 41,
+    "year": 0,
+    "doy": 1,
+    "hour": 2,
+    "minute": 3,
+    "bmag": 13,
+    "bz": 18,
+    "speed": 21,
+    "density": 25,
+    "pressure": 27,
+    "ae": 37,
+    "al": 38,
+    "symh": 41,
 }
-FILLS = {"bmag": 999.99, "bz": 999.99, "speed": 99999.9, "density": 999.99,
-         "pressure": 99.99, "ae": 99999.0, "al": 99999.0, "symh": 99999.0}
+FILLS = {
+    "bmag": 999.99,
+    "bz": 999.99,
+    "speed": 99999.9,
+    "density": 999.99,
+    "pressure": 99.99,
+    "ae": 99999.0,
+    "al": 99999.0,
+    "symh": 99999.0,
+}
+IMPLEMENTED_BASELINES = {"V_Bs", "I_Q"}
 
-@dataclass
+
+@dataclass(frozen=True)
+class Event:
+    event_id: str
+    sheet_tab: str
+    months: tuple[str, ...]
+    start: datetime
+    cutoff: datetime
+    end: datetime
+
+
+@dataclass(frozen=True)
 class Row:
     t: datetime
     bmag: float | None
@@ -43,56 +70,171 @@ class Row:
     symh: float | None
 
 
-def dt(s: str) -> datetime:
-    return datetime.fromisoformat(s.replace("Z", "+00:00"))
+def dt(value: str) -> datetime:
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def iso(value: datetime) -> str:
+    return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def load_policy(path: Path = POLICY_PATH) -> dict[str, Any]:
+    policy = json.loads(path.read_text(encoding="utf-8"))
+    required = {
+        "protocol_id",
+        "protocol_version",
+        "sensor_version",
+        "dataset_id",
+        "source_base",
+        "required_coverage_fields",
+        "gap_fields",
+        "minimum_coverage",
+        "maximum_gap_minutes",
+        "minimum_independent_events",
+        "required_baselines",
+        "events",
+    }
+    missing = sorted(required - policy.keys())
+    if missing:
+        raise ValueError(f"policy missing required keys: {missing}")
+    return policy
+
+
+def load_events(policy: dict[str, Any]) -> list[Event]:
+    events = [
+        Event(
+            event_id=item["event_id"],
+            sheet_tab=item["sheet_tab"],
+            months=tuple(item["months"]),
+            start=dt(item["start"]),
+            cutoff=dt(item["cutoff"]),
+            end=dt(item["end"]),
+        )
+        for item in policy["events"]
+    ]
+    for event in events:
+        if not event.start < event.cutoff < event.end:
+            raise ValueError(f"invalid cutoff ordering for {event.event_id}")
+        required_months = {
+            event.start.strftime("%Y%m"),
+            (event.end - timedelta(minutes=1)).strftime("%Y%m"),
+        }
+        if not required_months.issubset(event.months):
+            raise ValueError(
+                f"{event.event_id} does not list every month crossed by its window"
+            )
+    return events
 
 
 def clean(name: str, value: str) -> float | None:
     try:
-        x = float(value)
+        number = float(value)
     except ValueError:
         return None
     fill = FILLS[name]
-    if abs(x - fill) < 1e-6 or abs(x) >= fill:
+    if abs(number - fill) < 1e-6 or abs(number) >= fill:
         return None
-    return x
+    return number
 
 
-def download(month: str) -> Path:
-    dest = OUT / f"omni_min{month}.asc"
-    if not dest.exists():
-        url = f"{BASE}/omni_min{month}.asc"
-        urllib.request.urlretrieve(url, dest)
-    return dest
+def acquire(month: str, source_base: str, out: Path) -> tuple[Path, str]:
+    filename = f"omni_min{month}.asc"
+    destination = out / filename
+    source_dir = os.environ.get("EAGC_SOURCE_DIR")
+    if source_dir:
+        source = Path(source_dir) / filename
+        if not source.is_file():
+            raise FileNotFoundError(source)
+        if not destination.exists():
+            shutil.copyfile(source, destination)
+    elif not destination.exists():
+        url = f"{source_base}/{filename}"
+        temporary = destination.with_suffix(".asc.part")
+        try:
+            with urllib.request.urlopen(url, timeout=120) as response:
+                with temporary.open("wb") as target:
+                    shutil.copyfileobj(response, target)
+            temporary.replace(destination)
+        finally:
+            temporary.unlink(missing_ok=True)
+    return destination, f"{source_base}/{filename}"
 
 
-def parse(path: Path, start: datetime, end: datetime) -> list[Row]:
+def parse(
+    path: Path, start: datetime, end: datetime
+) -> tuple[list[Row], bool, int, int]:
     rows: list[Row] = []
-    with path.open("r", encoding="ascii", errors="ignore") as f:
-        for line in f:
-            p = line.split()
-            if len(p) < 46:
+    monotonic = True
+    duplicates = 0
+    malformed = 0
+    previous: datetime | None = None
+    seen: set[datetime] = set()
+    with path.open("r", encoding="ascii", errors="strict") as source:
+        for line in source:
+            parts = line.split()
+            if len(parts) <= max(IDX.values()):
+                malformed += 1
                 continue
             try:
-                t = datetime.strptime(f"{p[0]} {p[1]} {p[2]} {p[3]}", "%Y %j %H %M").replace(tzinfo=timezone.utc)
+                timestamp = datetime.strptime(
+                    f"{parts[0]} {parts[1]} {parts[2]} {parts[3]}",
+                    "%Y %j %H %M",
+                ).replace(tzinfo=timezone.utc)
             except ValueError:
+                malformed += 1
                 continue
-            if start <= t <= end:
-                rows.append(Row(t, clean("bmag", p[IDX["bmag"]]), clean("bz", p[IDX["bz"]]),
-                    clean("speed", p[IDX["speed"]]), clean("density", p[IDX["density"]]),
-                    clean("pressure", p[IDX["pressure"]]), clean("ae", p[IDX["ae"]]),
-                    clean("al", p[IDX["al"]]), clean("symh", p[IDX["symh"]])))
-    return rows
+            if not start <= timestamp < end:
+                continue
+            if previous is not None and timestamp <= previous:
+                monotonic = False
+            if timestamp in seen:
+                duplicates += 1
+            seen.add(timestamp)
+            previous = timestamp
+            rows.append(
+                Row(
+                    timestamp,
+                    clean("bmag", parts[IDX["bmag"]]),
+                    clean("bz", parts[IDX["bz"]]),
+                    clean("speed", parts[IDX["speed"]]),
+                    clean("density", parts[IDX["density"]]),
+                    clean("pressure", parts[IDX["pressure"]]),
+                    clean("ae", parts[IDX["ae"]]),
+                    clean("al", parts[IDX["al"]]),
+                    clean("symh", parts[IDX["symh"]]),
+                )
+            )
+    return rows, monotonic, duplicates, malformed
+
+
+def minute_grid(rows: list[Row], start: datetime, end: datetime) -> list[Row]:
+    by_time = {row.t: row for row in rows}
+    empty = {field.name: None for field in fields(Row) if field.name != "t"}
+    grid: list[Row] = []
+    timestamp = start
+    while timestamp < end:
+        grid.append(by_time.get(timestamp, Row(t=timestamp, **empty)))
+        timestamp += timedelta(minutes=1)
+    return grid
 
 
 def coverage(rows: list[Row], key: str) -> float:
-    return sum(getattr(r, key) is not None for r in rows) / max(1, len(rows))
+    return sum(getattr(row, key) is not None for row in rows) / max(1, len(rows))
 
 
 def max_gap(rows: list[Row], key: str) -> int:
-    run = best = 0
-    for r in rows:
-        if getattr(r, key) is None:
+    run = 0
+    best = 0
+    for row in rows:
+        if getattr(row, key) is None:
             run += 1
             best = max(best, run)
         else:
@@ -100,113 +242,435 @@ def max_gap(rows: list[Row], key: str) -> int:
     return best
 
 
-def q(x: float, lo: float, hi: float) -> float:
-    return max(0.0, min(1.0, (x-lo)/(hi-lo)))
+def q(value: float, low: float, high: float) -> float:
+    return max(0.0, min(1.0, (value - low) / (high - low)))
 
 
-def features(rows: list[Row]) -> dict[str, float | int | str | None]:
-    valid = [r for r in rows if r.bz is not None and r.speed is not None and r.pressure is not None]
+def feature_vector(rows: list[Row], cutoff: datetime) -> dict[str, float | int] | None:
+    prefix = [row for row in rows if row.t < cutoff]
+    valid = [
+        row
+        for row in prefix
+        if row.bz is not None and row.speed is not None and row.pressure is not None
+    ]
     if not valid:
-        return {"status": "HOLD-DATA"}
-    south = [r for r in valid if r.bz < -5]
-    iq = sum(max(0.0, -r.bz) * r.speed * math.sqrt(max(r.pressure, 0.0)) for r in valid) / len(valid)
-    vb = sum(max(0.0, -r.bz) * r.speed for r in valid) / len(valid)
-    # Front candidates: joint 30-minute changes in V, Pdyn and |B|, clustered within 3h.
-    cand: list[int] = []
-    for i in range(30, len(rows)):
-        a, b = rows[i-30], rows[i]
-        if None in (a.speed, b.speed, a.pressure, b.pressure, a.bmag, b.bmag):
+        return None
+    south = [row for row in valid if row.bz < -5]
+    iq = sum(
+        max(0.0, -row.bz) * row.speed * math.sqrt(max(row.pressure, 0.0))
+        for row in valid
+    ) / len(valid)
+    vb = sum(max(0.0, -row.bz) * row.speed for row in valid) / len(valid)
+
+    candidates: list[int] = []
+    for index in range(30, len(prefix)):
+        before = prefix[index - 30]
+        after = prefix[index]
+        if None in (
+            before.speed,
+            after.speed,
+            before.pressure,
+            after.pressure,
+            before.bmag,
+            after.bmag,
+        ):
             continue
-        dv = b.speed - a.speed
-        rp = b.pressure / max(a.pressure, 0.1)
-        rb = b.bmag / max(a.bmag, 0.1)
-        if dv >= 70 and rp >= 1.8 and rb >= 1.4:
-            cand.append(i)
+        speed_change = after.speed - before.speed
+        pressure_ratio = after.pressure / max(before.pressure, 0.1)
+        field_ratio = after.bmag / max(before.bmag, 0.1)
+        if speed_change >= 70 and pressure_ratio >= 1.8 and field_ratio >= 1.4:
+            candidates.append(index)
     clusters: list[int] = []
-    for i in cand:
-        if not clusters or i - clusters[-1] > 180:
-            clusters.append(i)
-    nfront = len(clusters)
-    if nfront > 1:
-        gaps = [(clusters[i]-clusters[i-1])/60 for i in range(1, nfront)]
-        compact = math.exp(-statistics.median(gaps)/18)
+    for index in candidates:
+        if not clusters or index - clusters[-1] > 180:
+            clusters.append(index)
+    front_count = len(clusters)
+    if front_count > 1:
+        gaps = [
+            (clusters[index] - clusters[index - 1]) / 60
+            for index in range(1, front_count)
+        ]
+        compactness = math.exp(-statistics.median(gaps) / 18)
     else:
-        compact = 0.15
-    south_hours = len(south)/60
-    persistence = 1-math.exp(-south_hours/5)
-    compression = q(max((r.pressure or 0) for r in rows), 2, 25)
-    stages = min(1.0, nfront/3)
-    lambda_arrival = 0.5*(max(1e-9, stages*compact*compression*persistence))**0.25 + 0.5*math.sqrt(max(0, compact*persistence))
-    # Receiver state from first 12h only; this avoids main-phase target leakage.
-    pre = rows[:min(len(rows), 720)]
-    sym = [r.symh for r in pre if r.symh is not None]
-    ae = [r.ae for r in pre if r.ae is not None]
-    al = [r.al for r in pre if r.al is not None]
-    den = [r.density for r in pre if r.density is not None]
-    bz = [r.bz for r in pre if r.bz is not None]
-    quiet = (sum(abs(x)<20 for x in sym)/len(sym)) if sym else 0.0
-    plasma = q(statistics.median(den), 2, 15) if den else 0.0
-    memory = q(-statistics.median(sym), 0, 80) if sym else 0.0
-    conduct = q(statistics.quantiles(ae, n=4)[2] if len(ae)>=4 else (max(ae) if ae else 0), 100, 1200)
-    tail = 0.5*q(sum(max(0,-x) for x in bz)/60, 0, 120) + 0.5*q(abs(statistics.quantiles(al,n=4)[0]) if len(al)>=4 else 0, 100, 1200)
-    pi_e = 1-(1-0.25*math.sqrt(quiet*plasma))*(1-0.35*math.sqrt(memory*conduct))*(1-0.60*tail)
-    target = min((r.symh for r in rows if r.symh is not None), default=None)
-    return {"status":"SCORABLE", "rows":len(rows), "fronts":nfront, "south_hours":round(south_hours,3),
-            "I_Q":iq, "V_Bs":vb, "Lambda":lambda_arrival, "Pi":pi_e,
-            "EAGC":iq*(0.5+lambda_arrival)*(0.5+pi_e), "SYM_H_min":target}
+        compactness = 0.15
+    south_hours = len(south) / 60
+    persistence = 1 - math.exp(-south_hours / 5)
+    compression = q(max((row.pressure or 0) for row in prefix), 2, 25)
+    stages = min(1.0, front_count / 3)
+    lambda_arrival = (
+        0.5
+        * (
+            max(1e-9, stages * compactness * compression * persistence)
+            ** 0.25
+        )
+        + 0.5 * math.sqrt(max(0, compactness * persistence))
+    )
+
+    symh = [row.symh for row in prefix if row.symh is not None]
+    ae = [row.ae for row in prefix if row.ae is not None]
+    al = [row.al for row in prefix if row.al is not None]
+    density = [row.density for row in prefix if row.density is not None]
+    bz = [row.bz for row in prefix if row.bz is not None]
+    quiet = sum(abs(value) < 20 for value in symh) / len(symh) if symh else 0.0
+    plasma = q(statistics.median(density), 2, 15) if density else 0.0
+    memory = q(-statistics.median(symh), 0, 80) if symh else 0.0
+    conductance = q(
+        statistics.quantiles(ae, n=4)[2]
+        if len(ae) >= 4
+        else (max(ae) if ae else 0),
+        100,
+        1200,
+    )
+    tail = 0.5 * q(sum(max(0, -value) for value in bz) / 60, 0, 120)
+    tail += 0.5 * q(
+        abs(statistics.quantiles(al, n=4)[0]) if len(al) >= 4 else 0,
+        100,
+        1200,
+    )
+    pi_e = 1 - (1 - 0.25 * math.sqrt(quiet * plasma)) * (
+        1 - 0.35 * math.sqrt(memory * conductance)
+    ) * (1 - 0.60 * tail)
+    return {
+        "feature_rows": len(prefix),
+        "valid_feature_rows": len(valid),
+        "fronts": front_count,
+        "south_hours": round(south_hours, 3),
+        "I_Q": iq,
+        "V_Bs": vb,
+        "Lambda": lambda_arrival,
+        "Pi": pi_e,
+        "EAGC": iq * (0.5 + lambda_arrival) * (0.5 + pi_e),
+    }
 
 
-def fit_loocv(items: list[dict], key: str) -> list[float]:
-    pred=[]
-    for i, item in enumerate(items):
-        train=[x for j,x in enumerate(items) if j!=i and x.get(key) is not None and x.get("SYM_H_min") is not None]
-        xs=[math.log1p(float(x[key])) for x in train]
-        ys=[-float(x["SYM_H_min"]) for x in train]
-        if len(xs)<2 or statistics.pvariance(xs)==0:
-            p=statistics.mean(ys) if ys else 0
+def target_after_cutoff(rows: list[Row], cutoff: datetime) -> float | None:
+    values = [row.symh for row in rows if row.t >= cutoff and row.symh is not None]
+    return min(values, default=None)
+
+
+def quality_result(
+    rows: list[Row],
+    *,
+    required_fields: list[str],
+    gap_fields: list[str],
+    minimum_coverage: float,
+    maximum_gap: int,
+    monotonic: bool,
+    duplicates: int,
+    prefix_invariant: bool,
+) -> tuple[str, dict[str, float], dict[str, int], list[str]]:
+    coverages = {key: coverage(rows, key) for key in required_fields}
+    gaps = {key: max_gap(rows, key) for key in gap_fields}
+    failures: list[str] = []
+    if not monotonic or duplicates:
+        failures.append("FAIL-TIME")
+    if not prefix_invariant:
+        failures.append("FAIL-LEAK")
+    if any(value < minimum_coverage for value in coverages.values()):
+        failures.append("HOLD-DATA")
+    if any(value > maximum_gap for value in gaps.values()):
+        failures.append("HOLD-GAP")
+    for status in ("FAIL-TIME", "FAIL-LEAK", "HOLD-DATA", "HOLD-GAP"):
+        if status in failures:
+            return status, coverages, gaps, failures
+    return "SCORABLE", coverages, gaps, failures
+
+
+def fit_loocv(items: list[dict[str, Any]], key: str) -> list[float]:
+    predictions: list[float] = []
+    for index, item in enumerate(items):
+        train = [
+            candidate
+            for candidate_index, candidate in enumerate(items)
+            if candidate_index != index
+            and candidate.get(key) is not None
+            and candidate.get("SYM_H_min") is not None
+        ]
+        xs = [math.log1p(float(candidate[key])) for candidate in train]
+        ys = [-float(candidate["SYM_H_min"]) for candidate in train]
+        if len(xs) < 2 or statistics.pvariance(xs) == 0:
+            prediction = statistics.mean(ys) if ys else 0
         else:
-            b=sum((x-statistics.mean(xs))*(y-statistics.mean(ys)) for x,y in zip(xs,ys))/sum((x-statistics.mean(xs))**2 for x in xs)
-            a=statistics.mean(ys)-b*statistics.mean(xs)
-            p=a+b*math.log1p(float(item[key]))
-        pred.append(-max(0,p))
-    return pred
+            mean_x = statistics.mean(xs)
+            mean_y = statistics.mean(ys)
+            slope = sum(
+                (x - mean_x) * (y - mean_y) for x, y in zip(xs, ys)
+            ) / sum((x - mean_x) ** 2 for x in xs)
+            intercept = mean_y - slope * mean_x
+            prediction = intercept + slope * math.log1p(float(item[key]))
+        predictions.append(-max(0, prediction))
+    return predictions
 
 
-def rmse(y, p):
-    return math.sqrt(sum((a-b)**2 for a,b in zip(y,p))/len(y))
+def rmse(actual: list[float], predicted: list[float]) -> float:
+    return math.sqrt(
+        sum((observed - estimate) ** 2 for observed, estimate in zip(actual, predicted))
+        / len(actual)
+    )
 
 
-def main():
-    summaries=[]
-    for eid, month, s, e in EVENTS:
-        rows=parse(download(month), dt(s), dt(e))
-        csv_path=OUT/f"{eid}.csv"
-        with csv_path.open("w",newline="",encoding="utf-8") as f:
-            w=csv.writer(f); w.writerow(["Time_UTC","Bmag_nT","BZ_GSM_nT","flow_speed_km_s","proton_density_cm3","Pressure_nPa","AE_INDEX_nT","AL_INDEX_nT","SYM_H_nT"])
-            for r in rows: w.writerow([r.t.isoformat(),r.bmag,r.bz,r.speed,r.density,r.pressure,r.ae,r.al,r.symh])
-        cov={k:coverage(rows,k) for k in ("bz","speed","density","pressure","ae","al","symh")}
-        gaps={k:max_gap(rows,k) for k in ("bz","speed","pressure")}
-        feat=features(rows)
-        status="SCORABLE" if min(cov["bz"],cov["speed"],cov["pressure"])>=0.90 and max(gaps.values())<=15 else "HOLD-DATA"
-        feat.update({"event_id":eid,"month":month,"coverage":cov,"max_gap_min":gaps,"quality_status":status})
-        summaries.append(feat)
-    sc=[x for x in summaries if x.get("quality_status")=="SCORABLE" and x.get("SYM_H_min") is not None]
-    metrics={"n_registered":len(EVENTS),"n_scorable":len(sc),"minimum_required":20,"decision":"HOLD-SAMPLE"}
-    if len(sc)>=4:
-        y=[x["SYM_H_min"] for x in sc]
-        for key in ("I_Q","V_Bs","EAGC"):
-            p=fit_loocv(sc,key); metrics[f"rmse_{key}"]=rmse(y,p)
-        if len(sc)>=20:
-            imp=(metrics["rmse_I_Q"]-metrics["rmse_EAGC"])/metrics["rmse_I_Q"]
-            metrics["improvement_vs_IQ"]=imp
-            metrics["decision"]="PASS" if imp>=0.05 else "REJECT"
-    (OUT/"event_summary.json").write_text(json.dumps(summaries,ensure_ascii=False,indent=2),encoding="utf-8")
-    (OUT/"gate_metrics.json").write_text(json.dumps(metrics,ensure_ascii=False,indent=2),encoding="utf-8")
-    with (OUT/"event_summary.csv").open("w",newline="",encoding="utf-8") as f:
-        fields=["event_id","quality_status","rows","fronts","south_hours","I_Q","V_Bs","Lambda","Pi","EAGC","SYM_H_min"]
-        w=csv.DictWriter(f,fieldnames=fields); w.writeheader()
-        for x in summaries: w.writerow({k:x.get(k) for k in fields})
-    print(json.dumps(metrics,ensure_ascii=False))
+def decision_for(
+    summaries: list[dict[str, Any]], policy: dict[str, Any]
+) -> tuple[str, list[str]]:
+    blockers: list[str] = []
+    non_scorable = [
+        item["event_id"]
+        for item in summaries
+        if item["quality_status"] != "SCORABLE"
+        or item.get("SYM_H_min") is None
+    ]
+    if non_scorable:
+        blockers.append("non-scorable registered events: " + ", ".join(non_scorable))
+        return "HOLD-DATA", blockers
+    minimum = int(policy["minimum_independent_events"])
+    if len(summaries) < minimum:
+        blockers.append(f"sample {len(summaries)} is below preregistered minimum {minimum}")
+    missing_baselines = sorted(set(policy["required_baselines"]) - IMPLEMENTED_BASELINES)
+    if missing_baselines:
+        blockers.append("required control baselines not implemented: " + ", ".join(missing_baselines))
+    if blockers:
+        return "HOLD-SAMPLE", blockers
+    return "HOLD-SAMPLE", ["PASS evaluation is not implemented without every acceptance gate"]
+
+
+def write_event_csv(path: Path, rows: list[Row]) -> None:
+    with path.open("w", newline="", encoding="utf-8") as target:
+        writer = csv.writer(target)
+        writer.writerow(
+            [
+                "Time_UTC",
+                "Bmag_nT",
+                "BZ_GSM_nT",
+                "flow_speed_km_s",
+                "proton_density_cm3",
+                "Pressure_nPa",
+                "AE_INDEX_nT",
+                "AL_INDEX_nT",
+                "SYM_H_nT",
+            ]
+        )
+        for row in rows:
+            writer.writerow(
+                [
+                    iso(row.t),
+                    row.bmag,
+                    row.bz,
+                    row.speed,
+                    row.density,
+                    row.pressure,
+                    row.ae,
+                    row.al,
+                    row.symh,
+                ]
+            )
+
+
+def write_registry_csv(
+    path: Path,
+    rows: list[Row],
+    *,
+    source_by_month: dict[str, tuple[str, str]],
+    cutoff: datetime,
+) -> None:
+    with path.open("w", newline="", encoding="utf-8") as target:
+        writer = csv.writer(target)
+        writer.writerow(
+            [
+                "Time_UTC",
+                "BZ_GSM_nT",
+                "flow_speed_km_s",
+                "proton_density_cm3",
+                "Pressure_nPa",
+                "AE_INDEX_nT",
+                "AL_INDEX_nT",
+                "SYM_H_nT",
+                "source",
+                "cutoff_rule",
+            ]
+        )
+        for row in rows:
+            source_url, source_hash = source_by_month[row.t.strftime("%Y%m")]
+            provenance = f"{source_url}#sha256={source_hash}"
+            writer.writerow(
+                [
+                    iso(row.t),
+                    row.bz,
+                    row.speed,
+                    row.density,
+                    row.pressure,
+                    row.ae,
+                    row.al,
+                    row.symh,
+                    provenance,
+                    "FEATURE_PREFIX" if row.t < cutoff else "TARGET_ONLY",
+                ]
+            )
+
+
+def main() -> None:
+    policy = load_policy()
+    events = load_events(policy)
+    OUT.mkdir(parents=True, exist_ok=True)
+    transfer_dir = OUT / "registry_transfer"
+    transfer_dir.mkdir(parents=True, exist_ok=True)
+    summaries: list[dict[str, Any]] = []
+    source_manifest: dict[str, Any] = {}
+
+    for event in events:
+        parsed: list[Row] = []
+        monotonic = True
+        duplicates = 0
+        malformed = 0
+        source_by_month: dict[str, tuple[str, str]] = {}
+        for month in event.months:
+            source_path, source_url = acquire(month, policy["source_base"], OUT)
+            source_hash = sha256(source_path)
+            month_rows, month_monotonic, _month_duplicates, month_malformed = parse(
+                source_path, event.start, event.end
+            )
+            parsed.extend(month_rows)
+            monotonic = monotonic and month_monotonic
+            malformed += month_malformed
+            source_by_month[month] = (source_url, source_hash)
+            source_manifest[month] = {
+                "file": source_path.name,
+                "url": source_url,
+                "sha256": source_hash,
+                "size_bytes": source_path.stat().st_size,
+            }
+        if any(after.t <= before.t for before, after in zip(parsed, parsed[1:])):
+            monotonic = False
+        duplicates = len(parsed) - len({row.t for row in parsed})
+        rows = minute_grid(parsed, event.start, event.end)
+        features_all = feature_vector(rows, event.cutoff)
+        prefix_only = [row for row in rows if row.t < event.cutoff]
+        features_prefix = feature_vector(prefix_only, event.cutoff)
+        prefix_invariant = features_all == features_prefix
+        target = target_after_cutoff(rows, event.cutoff)
+        status, coverages, gaps, failures = quality_result(
+            rows,
+            required_fields=policy["required_coverage_fields"],
+            gap_fields=policy["gap_fields"],
+            minimum_coverage=float(policy["minimum_coverage"]),
+            maximum_gap=int(policy["maximum_gap_minutes"]),
+            monotonic=monotonic,
+            duplicates=duplicates,
+            prefix_invariant=prefix_invariant,
+        )
+        summary: dict[str, Any] = {
+            "event_id": event.event_id,
+            "sheet_tab": event.sheet_tab,
+            "months": list(event.months),
+            "window_start": iso(event.start),
+            "forecast_cutoff": iso(event.cutoff),
+            "window_end_exclusive": iso(event.end),
+            "expected_rows": len(rows),
+            "observed_rows": len(parsed),
+            "time_monotonic": monotonic,
+            "duplicate_timestamps": duplicates,
+            "malformed_source_rows": malformed,
+            "coverage": coverages,
+            "max_gap_min": gaps,
+            "prefix_invariant": prefix_invariant,
+            "quality_failures": failures,
+            "quality_status": status,
+            "diagnostic_only": status != "SCORABLE",
+            "SYM_H_min": target,
+        }
+        if features_all:
+            summary.update(features_all)
+        summaries.append(summary)
+        write_event_csv(OUT / f"{event.event_id}.csv", rows)
+        write_registry_csv(
+            transfer_dir / f"{event.sheet_tab}.csv",
+            rows,
+            source_by_month=source_by_month,
+            cutoff=event.cutoff,
+        )
+
+    scorable = [
+        item
+        for item in summaries
+        if item["quality_status"] == "SCORABLE"
+        and item.get("SYM_H_min") is not None
+    ]
+    decision, blockers = decision_for(summaries, policy)
+    metrics: dict[str, Any] = {
+        "n_registered": len(events),
+        "n_scorable": len(scorable),
+        "quality_counts": dict(Counter(item["quality_status"] for item in summaries)),
+        "minimum_required": int(policy["minimum_independent_events"]),
+        "decision": decision,
+        "pass_eligible": False,
+        "blockers": blockers,
+    }
+    if len(scorable) >= 4:
+        actual = [float(item["SYM_H_min"]) for item in scorable]
+        for key in ("I_Q", "V_Bs", "EAGC"):
+            predicted = fit_loocv(scorable, key)
+            metrics[f"rmse_{key}"] = rmse(actual, predicted)
+
+    (OUT / "event_summary.json").write_text(
+        json.dumps(summaries, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    (OUT / "gate_metrics.json").write_text(
+        json.dumps(metrics, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    with (OUT / "event_summary.csv").open(
+        "w", newline="", encoding="utf-8"
+    ) as target:
+        fieldnames = [
+            "event_id",
+            "quality_status",
+            "expected_rows",
+            "observed_rows",
+            "forecast_cutoff",
+            "prefix_invariant",
+            "fronts",
+            "south_hours",
+            "I_Q",
+            "V_Bs",
+            "Lambda",
+            "Pi",
+            "EAGC",
+            "SYM_H_min",
+        ]
+        writer = csv.DictWriter(target, fieldnames=fieldnames)
+        writer.writeheader()
+        for item in summaries:
+            writer.writerow({key: item.get(key) for key in fieldnames})
+
+    provenance = {
+        "protocol_id": policy["protocol_id"],
+        "protocol_version": policy["protocol_version"],
+        "sensor_version": policy["sensor_version"],
+        "dataset_id": policy["dataset_id"],
+        "policy_file": str(POLICY_PATH.relative_to(ROOT.parent.parent)),
+        "policy_sha256": sha256(POLICY_PATH),
+        "runner_sha256": sha256(Path(__file__)),
+        "source_files": source_manifest,
+        "github_repository": os.environ.get("GITHUB_REPOSITORY"),
+        "github_sha": os.environ.get("GITHUB_SHA"),
+        "github_run_id": os.environ.get("GITHUB_RUN_ID"),
+        "implemented_baselines": sorted(IMPLEMENTED_BASELINES),
+        "required_baselines": policy["required_baselines"],
+        "known_policy_deviations": [
+            "Bmag is used by the existing front detector but is not listed in the frozen Sheet parameter row",
+            "Newell and Burton/OBrien-McPherron control baselines are not implemented",
+            "bootstrap and single-event-dependence acceptance gates are not evaluated",
+        ],
+    }
+    (OUT / "provenance.json").write_text(
+        json.dumps(provenance, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    shutil.copyfile(POLICY_PATH, OUT / "policy.json")
+
+    if len(events) < int(policy["minimum_independent_events"]):
+        assert metrics["decision"] != "PASS"
+    if any(item["quality_status"] != "SCORABLE" for item in summaries):
+        assert metrics["decision"] == "HOLD-DATA"
+    print(json.dumps(metrics, ensure_ascii=False))
+
 
 if __name__ == "__main__":
     main()
