@@ -1,0 +1,78 @@
+{
+  "protocol_id": "TZAR-RESEARCH-EAGC-012",
+  "protocol_version": "0.1.0-corrected",
+  "sensor_version": "QE-EAGC-SENSORS-001/0.1.0",
+  "dataset_id": "OMNI_HRO_1MIN",
+  "source_base": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min",
+  "window_semantics": "half-open [start,end)",
+  "forecast_cutoff_rule": {
+    "id": "fixed-start-plus-12h-v1",
+    "prefix_minutes": 720,
+    "basis_commit": "f692be756e581c86ab496973367103a40e76d64b"
+  },
+  "required_coverage_fields": [
+    "bz",
+    "speed",
+    "density",
+    "pressure"
+  ],
+  "gap_fields": [
+    "bz",
+    "speed",
+    "pressure"
+  ],
+  "minimum_coverage": 0.9,
+  "maximum_gap_minutes": 15,
+  "minimum_independent_events": 20,
+  "minimum_rmse_improvement": 0.05,
+  "minimum_bootstrap_probability": 0.9,
+  "required_baselines": [
+    "V_Bs",
+    "I_Q",
+    "Newell",
+    "Burton_OBrien_McPherron"
+  ],
+  "events": [
+    {
+      "event_id": "E2001-0331",
+      "sheet_tab": "E2001_0331",
+      "months": [
+        "200103",
+        "200104"
+      ],
+      "start": "2001-03-29T00:00:00Z",
+      "cutoff": "2001-03-29T12:00:00Z",
+      "end": "2001-04-02T00:00:00Z"
+    },
+    {
+      "event_id": "E2004-1108",
+      "sheet_tab": "E2004_1108",
+      "months": [
+        "200411"
+      ],
+      "start": "2004-11-06T00:00:00Z",
+      "cutoff": "2004-11-06T12:00:00Z",
+      "end": "2004-11-11T00:00:00Z"
+    },
+    {
+      "event_id": "E2005-0515",
+      "sheet_tab": "E2005_0515",
+      "months": [
+        "200505"
+      ],
+      "start": "2005-05-13T00:00:00Z",
+      "cutoff": "2005-05-13T12:00:00Z",
+      "end": "2005-05-17T00:00:00Z"
+    },
+    {
+      "event_id": "E2015-0622",
+      "sheet_tab": "E2015_0622",
+      "months": [
+        "201506"
+      ],
+      "start": "2015-06-20T00:00:00Z",
+      "cutoff": "2015-06-20T12:00:00Z",
+      "end": "2015-06-25T00:00:00Z"
+    }
+  ]
+}
