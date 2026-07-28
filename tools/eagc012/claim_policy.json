@@ -1,0 +1,27 @@
+{
+  "policy_id": "TZAR-RESEARCH-EAGC-012-CLAIM-ADJUDICATION",
+  "policy_version": "1.0.0",
+  "analysis_kind": "retrospective-threshold-sensitivity",
+  "primary_baseline": "Newell",
+  "secondary_baselines": [
+    "V_Bs",
+    "I_Q",
+    "Burton_OBrien_McPherron"
+  ],
+  "noninferiority_margin_rmse": 0.05,
+  "minimum_noninferiority_probability": 0.9,
+  "minimum_superiority_improvement": 0.05,
+  "minimum_superiority_probability": 0.9,
+  "bootstrap_replicates": 100000,
+  "bootstrap_seed": 12012,
+  "severity_thresholds": {
+    "severe_max_symh": -100.0,
+    "moderate_max_symh": -50.0
+  },
+  "scope_status_prefix": {
+    "in-domain": "",
+    "transport": "TRANSPORT-"
+  },
+  "interpretation": "PASS-NONINFERIOR means the primary comparison rules out an RMSE loss greater than the 5% legacy practical margin at the legacy 0.90 probability level and remains within that margin after every single-event omission. PASS-SUPERIOR additionally requires at least 5% point improvement, at least 0.90 probability of positive improvement, and no leave-one-event-out reversal. Secondary baselines and severity strata are descriptive and cannot veto the primary claim.",
+  "limitations": "This policy separates superiority, noninferiority, and transport after the v0.3-v0.6 targets were observed. It is a transparent retrospective adjudication, not a replacement for the frozen decisions or a newly preregistered confirmatory experiment."
+}
