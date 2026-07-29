@@ -1,21 +1,22 @@
 {
   "protocol_id": "TZAR-RESEARCH-EAGC-012",
-  "protocol_version": "0.5.0-final-independent-replication",
-  "sensor_version": "QE-EAGC-SENSORS-001/0.5.0",
+  "protocol_version": "0.6.0-external-sir-replication",
+  "sensor_version": "QE-EAGC-SENSORS-001/0.6.0",
   "dataset_id": "OMNI_HRO_1MIN",
   "source_base": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min",
   "window_semantics": "half-open [start,end)",
   "forecast_cutoff_rule": {
-    "id": "catalog-disturbance-plus-12h-v5",
+    "id": "catalog-event-start-plus-12h-v6",
     "prefix_minutes": 720,
-    "basis_commit": "4ad87a8e47267a95c6b0dd8429508804437886f6"
+    "basis_commit": "ea061057fe7fe88e39993c6f31c13638701439ab"
   },
   "event_catalog": {
-    "url": "https://spdf.gsfc.nasa.gov/pub/pre_generated_plots/ace/level3/icmetable2.html",
-    "reference": "https://doi.org/10.7910/DVN/C2MHTH",
+    "url": "https://izw1.caltech.edu/ACE/ASC/DATA/level3/SIR_List_1995_2009_Jian.pdf",
+    "metadata": "https://spase-metadata.org/NASA/Catalog/Wind/SIR_List.html",
+    "reference": "https://doi.org/10.1007/s11207-006-0132-3",
     "retrieved_date": "2026-07-28",
-    "source_sha256": "7cf9d9ddb2a5104401a0b0e12b889f8354a0ed45899d2e3737f4d581cbaefb7b",
-    "selection_rule": "The 60 events through 2022-07-10 form development after the recorded v0.3 and v0.4 validation failures. For the final v0.5 validation, start strictly after 2022-07-10T12:00:00Z and consider Richardson-Cane near-Earth ICMEs chronologically. Use catalog disturbance time as start, start plus 12 hours as cutoff, and catalog ICME plasma/field end as exclusive end; require at least 12 target hours after cutoff; greedily exclude overlapping windows before data checks; require at least 75% prefix availability and no gap over 15 minutes for the five fields consumed by the frozen model or controls, plus at least 90% target SYM-H availability and no target gap over 15 minutes; do not inspect target values or model scores; take the first 20 eligible events. This is the final available independent block under the frozen rule."
+    "source_sha256": "92540a56efd83d325df60011e0292d05305e1948c59fe3f78be96dd5c43bdb96",
+    "selection_rule": "Frozen in commit ea061057fe7fe88e39993c6f31c13638701439ab before external target inspection. Consider Lan Jian SIR catalog rows from 1995 through 2002 chronologically; exclude star-marked ICME/flux-rope rows and fractional-minute timestamps; use catalog Start UT, start plus 12 hours as cutoff, and catalog End UT as exclusive end; require at least 12 target hours after cutoff; exclude overlap with all 80 previously disclosed events and with earlier accepted external candidates; use availability flags only to require at least 75% prefix coverage and no gap over 15 minutes for BY, BZ, speed, pressure, and SYM-H, plus at least 90% target SYM-H coverage and no target gap over 15 minutes; take the first 20 eligible events without inspecting target values or model scores."
   },
   "prior_pilot": {
     "catalog": "https://cdaw.gsfc.nasa.gov/CME_list/dst100/",
@@ -45,6 +46,17 @@
     "best_control_rmse": 28.901802363193678,
     "purpose": "Failed replication retained as development evidence; never reported as PASS."
   },
+  "prior_final_replication": {
+    "protocol_version": "0.5.0-final-independent-replication",
+    "frozen_commit": "2d675f4",
+    "n_development": 60,
+    "n_validation": 20,
+    "decision": "REJECT",
+    "eagc_rmse": 74.03013209872539,
+    "best_control": "Newell",
+    "best_control_rmse": 77.23624075341002,
+    "purpose": "Failed final ICME replication retained as development evidence; never reported as PASS."
+  },
   "model_references": {
     "Newell": "https://doi.org/10.1029/2006JA012015",
     "Burton_OBrien_McPherron": "https://doi.org/10.1016/S1364-6826(00)00072-9"
@@ -58,9 +70,7 @@
       "south_hours"
     ],
     "alpha": 10.0,
-    "selection_scope": "60-event development cohort only after the recorded v0.3 and v0.4 REJECT decisions",
-    "development_leave_one_event_out_rmse": 29.326168099826294,
-    "development_blocked_five_fold_rmse": 30.095822647923697
+    "selection_scope": "Frozen feature set and alpha; coefficients fitted on all 80 previously disclosed Richardson-Cane events after the recorded v0.3, v0.4, and v0.5 REJECT decisions"
   },
   "required_coverage_fields": [
     "by",
@@ -79,7 +89,7 @@
   "minimum_coverage": 0.75,
   "minimum_target_coverage": 0.9,
   "maximum_gap_minutes": 15,
-  "minimum_development_events": 60,
+  "minimum_development_events": 80,
   "minimum_independent_events": 20,
   "minimum_rmse_improvement": 0.05,
   "minimum_bootstrap_probability": 0.9,
@@ -691,9 +701,7 @@
       "end": "2022-07-10T12:00:00Z",
       "catalog_icme_start": "2022-07-09T14:00:00Z",
       "catalog_trigger_qualifier": null
-    }
-  ],
-  "validation_events": [
+    },
     {
       "event_id": "V2022-0718-2119",
       "sheet_tab": "V2022_0718_2119",
@@ -893,6 +901,208 @@
       "end": "2025-01-02T05:00:00Z",
       "catalog_icme_start": "2025-01-01T10:00:00Z",
       "catalog_trigger_qualifier": null
+    }
+  ],
+  "validation_events": [
+    {
+      "event_id": "S1995-0117-0200-J002",
+      "sheet_tab": "S1995_0117_0200_J002",
+      "months": ["199501"],
+      "start": "1995-01-17T02:00:00Z",
+      "cutoff": "1995-01-17T14:00:00Z",
+      "end": "1995-01-18T20:00:00Z",
+      "catalog_year": 1995,
+      "catalog_sir_number": 2
+    },
+    {
+      "event_id": "S1995-0128-1800-J004",
+      "sheet_tab": "S1995_0128_1800_J004",
+      "months": ["199501"],
+      "start": "1995-01-28T18:00:00Z",
+      "cutoff": "1995-01-29T06:00:00Z",
+      "end": "1995-01-30T11:00:00Z",
+      "catalog_year": 1995,
+      "catalog_sir_number": 4
+    },
+    {
+      "event_id": "S1995-0210-2200-J005",
+      "sheet_tab": "S1995_0210_2200_J005",
+      "months": ["199502"],
+      "start": "1995-02-10T22:00:00Z",
+      "cutoff": "1995-02-11T10:00:00Z",
+      "end": "1995-02-13T14:00:00Z",
+      "catalog_year": 1995,
+      "catalog_sir_number": 5
+    },
+    {
+      "event_id": "S1995-0225-2000-J006",
+      "sheet_tab": "S1995_0225_2000_J006",
+      "months": ["199502"],
+      "start": "1995-02-25T20:00:00Z",
+      "cutoff": "1995-02-26T08:00:00Z",
+      "end": "1995-02-28T20:00:00Z",
+      "catalog_year": 1995,
+      "catalog_sir_number": 6
+    },
+    {
+      "event_id": "S1995-0309-0400-J007",
+      "sheet_tab": "S1995_0309_0400_J007",
+      "months": ["199503"],
+      "start": "1995-03-09T04:00:00Z",
+      "cutoff": "1995-03-09T16:00:00Z",
+      "end": "1995-03-12T02:20:00Z",
+      "catalog_year": 1995,
+      "catalog_sir_number": 7
+    },
+    {
+      "event_id": "S1995-0422-0200-J010",
+      "sheet_tab": "S1995_0422_0200_J010",
+      "months": ["199504"],
+      "start": "1995-04-22T02:00:00Z",
+      "cutoff": "1995-04-22T14:00:00Z",
+      "end": "1995-04-25T04:00:00Z",
+      "catalog_year": 1995,
+      "catalog_sir_number": 10
+    },
+    {
+      "event_id": "S1995-0426-0800-J011",
+      "sheet_tab": "S1995_0426_0800_J011",
+      "months": ["199504"],
+      "start": "1995-04-26T08:00:00Z",
+      "cutoff": "1995-04-26T20:00:00Z",
+      "end": "1995-04-27T09:00:00Z",
+      "catalog_year": 1995,
+      "catalog_sir_number": 11
+    },
+    {
+      "event_id": "S1995-0529-0300-J015",
+      "sheet_tab": "S1995_0529_0300_J015",
+      "months": ["199505"],
+      "start": "1995-05-29T03:00:00Z",
+      "cutoff": "1995-05-29T15:00:00Z",
+      "end": "1995-05-31T06:00:00Z",
+      "catalog_year": 1995,
+      "catalog_sir_number": 15
+    },
+    {
+      "event_id": "S1995-0712-0900-J019",
+      "sheet_tab": "S1995_0712_0900_J019",
+      "months": ["199507"],
+      "start": "1995-07-12T09:00:00Z",
+      "cutoff": "1995-07-12T21:00:00Z",
+      "end": "1995-07-14T00:00:00Z",
+      "catalog_year": 1995,
+      "catalog_sir_number": 19
+    },
+    {
+      "event_id": "S1995-0724-0223-J021",
+      "sheet_tab": "S1995_0724_0223_J021",
+      "months": ["199507"],
+      "start": "1995-07-24T02:23:00Z",
+      "cutoff": "1995-07-24T14:23:00Z",
+      "end": "1995-07-25T10:00:00Z",
+      "catalog_year": 1995,
+      "catalog_sir_number": 21
+    },
+    {
+      "event_id": "S1995-0813-1300-J023",
+      "sheet_tab": "S1995_0813_1300_J023",
+      "months": ["199508"],
+      "start": "1995-08-13T13:00:00Z",
+      "cutoff": "1995-08-14T01:00:00Z",
+      "end": "1995-08-14T18:00:00Z",
+      "catalog_year": 1995,
+      "catalog_sir_number": 23
+    },
+    {
+      "event_id": "S1995-1001-2000-J027",
+      "sheet_tab": "S1995_1001_2000_J027",
+      "months": ["199510"],
+      "start": "1995-10-01T20:00:00Z",
+      "cutoff": "1995-10-02T08:00:00Z",
+      "end": "1995-10-03T12:00:00Z",
+      "catalog_year": 1995,
+      "catalog_sir_number": 27
+    },
+    {
+      "event_id": "S1995-1026-0600-J030",
+      "sheet_tab": "S1995_1026_0600_J030",
+      "months": ["199510"],
+      "start": "1995-10-26T06:00:00Z",
+      "cutoff": "1995-10-26T18:00:00Z",
+      "end": "1995-10-28T04:00:00Z",
+      "catalog_year": 1995,
+      "catalog_sir_number": 30
+    },
+    {
+      "event_id": "S1995-1030-0100-J031",
+      "sheet_tab": "S1995_1030_0100_J031",
+      "months": ["199510", "199511"],
+      "start": "1995-10-30T01:00:00Z",
+      "cutoff": "1995-10-30T13:00:00Z",
+      "end": "1995-11-01T18:00:00Z",
+      "catalog_year": 1995,
+      "catalog_sir_number": 31
+    },
+    {
+      "event_id": "S1995-1104-0800-J032",
+      "sheet_tab": "S1995_1104_0800_J032",
+      "months": ["199511"],
+      "start": "1995-11-04T08:00:00Z",
+      "cutoff": "1995-11-04T20:00:00Z",
+      "end": "1995-11-06T06:00:00Z",
+      "catalog_year": 1995,
+      "catalog_sir_number": 32
+    },
+    {
+      "event_id": "S1995-1121-1600-J033",
+      "sheet_tab": "S1995_1121_1600_J033",
+      "months": ["199511"],
+      "start": "1995-11-21T16:00:00Z",
+      "cutoff": "1995-11-22T04:00:00Z",
+      "end": "1995-11-24T00:00:00Z",
+      "catalog_year": 1995,
+      "catalog_sir_number": 33
+    },
+    {
+      "event_id": "S1996-0210-0120-J005",
+      "sheet_tab": "S1996_0210_0120_J005",
+      "months": ["199602"],
+      "start": "1996-02-10T01:20:00Z",
+      "cutoff": "1996-02-10T13:20:00Z",
+      "end": "1996-02-11T20:00:00Z",
+      "catalog_year": 1996,
+      "catalog_sir_number": 5
+    },
+    {
+      "event_id": "S1996-0217-2030-J006",
+      "sheet_tab": "S1996_0217_2030_J006",
+      "months": ["199602"],
+      "start": "1996-02-17T20:30:00Z",
+      "cutoff": "1996-02-18T08:30:00Z",
+      "end": "1996-02-19T10:00:00Z",
+      "catalog_year": 1996,
+      "catalog_sir_number": 6
+    },
+    {
+      "event_id": "S1996-0222-2355-J007",
+      "sheet_tab": "S1996_0222_2355_J007",
+      "months": ["199602"],
+      "start": "1996-02-22T23:55:00Z",
+      "cutoff": "1996-02-23T11:55:00Z",
+      "end": "1996-02-26T22:00:00Z",
+      "catalog_year": 1996,
+      "catalog_sir_number": 7
+    },
+    {
+      "event_id": "S1996-0407-2000-J011",
+      "sheet_tab": "S1996_0407_2000_J011",
+      "months": ["199604"],
+      "start": "1996-04-07T20:00:00Z",
+      "cutoff": "1996-04-08T08:00:00Z",
+      "end": "1996-04-09T17:00:00Z",
+      "catalog_year": 1996,
+      "catalog_sir_number": 11
     }
   ]
 }
