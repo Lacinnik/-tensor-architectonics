@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 import sys
 import tempfile
 import unittest
@@ -13,11 +14,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from run_gate import (
     POLICY_PATH,
     Row,
+    burton_obrien_mcpherron,
     clean,
     decision_for,
+    evaluate_gate,
     feature_vector,
     load_events,
     load_policy,
+    newell_coupling,
+    paired_bootstrap_probability,
     quality_result,
 )
 
@@ -28,11 +33,14 @@ def row(
     missing_speed: bool = False,
     missing_symh: bool = False,
     suffix_scale: float = 1.0,
+    by_value: float = 0.0,
+    bz_value: float = -6.0,
 ) -> Row:
     return Row(
         t=datetime(2026, 1, 1, tzinfo=timezone.utc) + timedelta(minutes=minute),
         bmag=8.0 * suffix_scale,
-        bz=-6.0 * suffix_scale,
+        by=by_value * suffix_scale,
+        bz=bz_value * suffix_scale,
         speed=None if missing_speed else 450.0 * suffix_scale,
         density=5.0,
         pressure=2.0 * suffix_scale,
@@ -46,39 +54,82 @@ class GateTests(unittest.TestCase):
     def setUp(self) -> None:
         self.policy = {
             "minimum_independent_events": 20,
+            "minimum_development_events": 20,
+            "minimum_rmse_improvement": 0.05,
+            "minimum_bootstrap_probability": 0.9,
+            "bootstrap_replicates": 1000,
+            "bootstrap_seed": 12012,
             "required_baselines": [
                 "V_Bs",
                 "I_Q",
                 "Newell",
                 "Burton_OBrien_McPherron",
             ],
+            "eagc_model": {
+                "kind": "standardized_ridge",
+                "features": [
+                    "south_hours",
+                    "SYM_H_prefix_min",
+                    "SYM_H_recent",
+                    "pressure_peak",
+                ],
+                "alpha": 0.1,
+            },
         }
 
     def test_non_scorable_event_forces_hold_data(self) -> None:
         summaries = [
-            {"event_id": "A", "quality_status": "SCORABLE", "SYM_H_min": -10},
-            {"event_id": "B", "quality_status": "HOLD-DATA", "SYM_H_min": -20},
-            {"event_id": "C", "quality_status": "SCORABLE", "SYM_H_min": -30},
-            {"event_id": "D", "quality_status": "SCORABLE", "SYM_H_min": -40},
+            {
+                "event_id": "A",
+                "cohort": "development",
+                "quality_status": "SCORABLE",
+                "SYM_H_min": -10,
+            },
+            {
+                "event_id": "B",
+                "cohort": "development",
+                "quality_status": "HOLD-DATA",
+                "SYM_H_min": -20,
+            },
+            {
+                "event_id": "C",
+                "cohort": "validation",
+                "quality_status": "SCORABLE",
+                "SYM_H_min": -30,
+            },
+            {
+                "event_id": "D",
+                "cohort": "validation",
+                "quality_status": "SCORABLE",
+                "SYM_H_min": -40,
+            },
         ]
         decision, blockers = decision_for(summaries, self.policy)
         self.assertEqual(decision, "HOLD-DATA")
         self.assertTrue(
-            any("sample 4 is below preregistered minimum 20" in item for item in blockers)
-        )
-        self.assertTrue(
-            any("required control baselines not implemented" in item for item in blockers)
+            any(
+                "development sample 2 is below preregistered minimum 20"
+                in item
+                for item in blockers
+            )
         )
 
     def test_four_scorable_events_cannot_pass(self) -> None:
         summaries = [
             {
                 "event_id": name,
+                "cohort": "development",
                 "quality_status": "SCORABLE",
                 "SYM_H_min": -10,
                 "I_Q": 1.0,
                 "V_Bs": 1.0,
+                "Newell": 1.0,
+                "Burton_OBrien_McPherron": 1.0,
                 "EAGC": 1.0,
+                "south_hours": 1.0,
+                "SYM_H_prefix_min": 1.0,
+                "SYM_H_recent": 1.0,
+                "pressure_peak": 1.0,
             }
             for name in ("A", "B", "C", "D")
         ]
@@ -148,7 +199,7 @@ class GateTests(unittest.TestCase):
     def test_event_window_requires_every_crossed_month(self) -> None:
         policy = {
             "forecast_cutoff_rule": {"prefix_minutes": 1440},
-            "events": [
+            "development_events": [
                 {
                     "event_id": "A",
                     "sheet_tab": "A",
@@ -157,19 +208,24 @@ class GateTests(unittest.TestCase):
                     "cutoff": "2026-02-01T00:00:00Z",
                     "end": "2026-03-02T00:00:00Z",
                 }
-            ]
+            ],
+            "validation_events": [],
         }
         with self.assertRaisesRegex(ValueError, "every month crossed"):
             load_events(policy)
 
-        policy["events"][0]["months"] = ["202603", "202602", "202601"]
+        policy["development_events"][0]["months"] = [
+            "202603",
+            "202602",
+            "202601",
+        ]
         with self.assertRaisesRegex(ValueError, "chronological order"):
             load_events(policy)
 
     def test_event_cutoff_must_match_frozen_rule(self) -> None:
         policy = {
             "forecast_cutoff_rule": {"prefix_minutes": 720},
-            "events": [
+            "development_events": [
                 {
                     "event_id": "A",
                     "sheet_tab": "A",
@@ -179,6 +235,7 @@ class GateTests(unittest.TestCase):
                     "end": "2026-01-02T00:00:00Z",
                 }
             ],
+            "validation_events": [],
         }
         with self.assertRaisesRegex(ValueError, "forecast cutoff rule"):
             load_events(policy)
@@ -186,7 +243,7 @@ class GateTests(unittest.TestCase):
     def test_event_times_must_be_utc_and_minute_aligned(self) -> None:
         policy = {
             "forecast_cutoff_rule": {"prefix_minutes": 720},
-            "events": [
+            "development_events": [
                 {
                     "event_id": "A",
                     "sheet_tab": "A",
@@ -196,11 +253,12 @@ class GateTests(unittest.TestCase):
                     "end": "2026-01-02T00:00:00+03:00",
                 }
             ],
+            "validation_events": [],
         }
         with self.assertRaisesRegex(ValueError, "must use UTC"):
             load_events(policy)
 
-        policy["events"][0].update(
+        policy["development_events"][0].update(
             {
                 "start": "2026-01-01T00:00:30Z",
                 "cutoff": "2026-01-01T12:00:30Z",
@@ -213,7 +271,7 @@ class GateTests(unittest.TestCase):
     def test_registered_events_must_be_unique_and_independent(self) -> None:
         policy = {
             "forecast_cutoff_rule": {"prefix_minutes": 720},
-            "events": [
+            "development_events": [
                 {
                     "event_id": "A",
                     "sheet_tab": "A",
@@ -231,18 +289,19 @@ class GateTests(unittest.TestCase):
                     "end": "2026-01-04T00:00:00Z",
                 },
             ],
+            "validation_events": [],
         }
         with self.assertRaisesRegex(ValueError, "event_id values must be unique"):
             load_events(policy)
 
-        policy["events"][1]["event_id"] = "B"
+        policy["development_events"][1]["event_id"] = "B"
         with self.assertRaisesRegex(ValueError, "event windows overlap"):
             load_events(policy)
 
     def test_artifact_identifiers_cannot_escape_output_directories(self) -> None:
         policy = {
             "forecast_cutoff_rule": {"prefix_minutes": 720},
-            "events": [
+            "development_events": [
                 {
                     "event_id": "../gate_metrics",
                     "sheet_tab": "A",
@@ -252,6 +311,7 @@ class GateTests(unittest.TestCase):
                     "end": "2026-01-02T00:00:00Z",
                 }
             ],
+            "validation_events": [],
         }
         with self.assertRaisesRegex(ValueError, "invalid event_id"):
             load_events(policy)
@@ -276,6 +336,94 @@ class GateTests(unittest.TestCase):
             path.write_text(json.dumps(policy), encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "gap_fields"):
                 load_policy(path)
+
+            policy = json.loads(POLICY_PATH.read_text(encoding="utf-8"))
+            policy["minimum_rmse_improvement"] = 0
+            path.write_text(json.dumps(policy), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "minimum_rmse_improvement"):
+                load_policy(path)
+
+            policy = json.loads(POLICY_PATH.read_text(encoding="utf-8"))
+            policy["bootstrap_replicates"] = 100
+            path.write_text(json.dumps(policy), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "bootstrap_replicates"):
+                load_policy(path)
+
+    def test_newell_control_matches_published_coupling_function(self) -> None:
+        rows = [row(minute, by_value=0.0, bz_value=-6.0) for minute in range(10)]
+        expected = 450.0 ** (4 / 3) * 6.0 ** (2 / 3)
+        self.assertAlmostEqual(newell_coupling(rows), expected)
+
+    def test_burton_obrien_control_responds_to_southward_field(self) -> None:
+        northward = [
+            row(minute, bz_value=6.0) for minute in range(120)
+        ]
+        southward = [
+            row(minute, bz_value=-12.0) for minute in range(120)
+        ]
+        quiet = burton_obrien_mcpherron(northward)
+        driven = burton_obrien_mcpherron(southward)
+        self.assertIsNotNone(quiet)
+        self.assertIsNotNone(driven)
+        assert quiet is not None
+        assert driven is not None
+        self.assertGreater(driven, quiet)
+
+    def test_paired_bootstrap_is_deterministic(self) -> None:
+        actual = [-10.0, -20.0, -30.0, -40.0]
+        candidate = actual.copy()
+        baseline = [-5.0, -10.0, -15.0, -20.0]
+        first = paired_bootstrap_probability(
+            actual,
+            candidate,
+            baseline,
+            replicates=1000,
+            seed=42,
+        )
+        second = paired_bootstrap_probability(
+            actual,
+            candidate,
+            baseline,
+            replicates=1000,
+            seed=42,
+        )
+        self.assertEqual(first, second)
+        self.assertEqual(first, 1.0)
+
+    def test_complete_acceptance_gates_can_produce_pass(self) -> None:
+        summaries = []
+        for cohort_index, cohort in enumerate(("development", "validation")):
+            for index in range(1, 21):
+                signal = float(index + cohort_index)
+                target = -(10.0 + 3.0 * signal)
+                summaries.append(
+                    {
+                        "event_id": f"{cohort[0].upper()}{index:02d}",
+                        "cohort": cohort,
+                        "quality_status": "SCORABLE",
+                        "SYM_H_min": target,
+                        "I_Q": 1.0,
+                        "V_Bs": 1.0,
+                        "Newell": 1.0,
+                        "Burton_OBrien_McPherron": 1.0,
+                        "south_hours": signal,
+                        "SYM_H_prefix_min": signal,
+                        "SYM_H_recent": signal,
+                        "pressure_peak": signal,
+                    }
+                )
+        decision, blockers, metrics = evaluate_gate(summaries, self.policy)
+        self.assertEqual(decision, "PASS")
+        self.assertEqual(blockers, [])
+        self.assertEqual(set(metrics["comparisons"]), set(self.policy["required_baselines"]))
+        self.assertTrue(
+            all(
+                comparison["rmse_gate_pass"]
+                and comparison["bootstrap_gate_pass"]
+                and comparison["single_event_gate_pass"]
+                for comparison in metrics["comparisons"].values()
+            )
+        )
 
     def test_suffix_cannot_change_feature_vector(self) -> None:
         cutoff = datetime(2026, 1, 1, 0, 30, tzinfo=timezone.utc)

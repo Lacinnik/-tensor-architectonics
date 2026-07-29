@@ -1,78 +1,482 @@
 {
   "protocol_id": "TZAR-RESEARCH-EAGC-012",
-  "protocol_version": "0.1.0-corrected",
-  "sensor_version": "QE-EAGC-SENSORS-001/0.1.0",
+  "protocol_version": "0.3.0-independent-holdout",
+  "sensor_version": "QE-EAGC-SENSORS-001/0.3.0",
   "dataset_id": "OMNI_HRO_1MIN",
   "source_base": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min",
   "window_semantics": "half-open [start,end)",
   "forecast_cutoff_rule": {
-    "id": "fixed-start-plus-12h-v1",
+    "id": "catalog-disturbance-plus-12h-v3",
     "prefix_minutes": 720,
-    "basis_commit": "f692be756e581c86ab496973367103a40e76d64b"
+    "basis_commit": "4ad87a8e47267a95c6b0dd8429508804437886f6"
+  },
+  "event_catalog": {
+    "url": "https://spdf.gsfc.nasa.gov/pub/pre_generated_plots/ace/level3/icmetable2.html",
+    "reference": "https://doi.org/10.7910/DVN/C2MHTH",
+    "retrieved_date": "2026-07-28",
+    "source_sha256": "7cf9d9ddb2a5104401a0b0e12b889f8354a0ed45899d2e3737f4d581cbaefb7b",
+    "selection_rule": "Starting strictly after the prior pilot window ended at 2003-08-19T16:00:00Z, consider Richardson-Cane near-Earth ICMEs chronologically. Use catalog disturbance time as start, start plus 12 hours as cutoff, and catalog ICME plasma/field end as exclusive end; require at least 12 target hours after cutoff; greedily exclude overlapping windows before data checks; apply the frozen predictor and target availability gates without inspecting target values or model scores; take the first 40 eligible events, assigning the first 20 to development and the next 20 to one-time validation."
+  },
+  "prior_pilot": {
+    "catalog": "https://cdaw.gsfc.nasa.gov/CME_list/dst100/",
+    "n_events": 20,
+    "decision": "REJECT",
+    "purpose": "Protocol and model development only; excluded from confirmatory scoring."
+  },
+  "model_references": {
+    "Newell": "https://doi.org/10.1029/2006JA012015",
+    "Burton_OBrien_McPherron": "https://doi.org/10.1016/S1364-6826(00)00072-9"
+  },
+  "eagc_model": {
+    "kind": "standardized_ridge",
+    "features": [
+      "south_hours",
+      "SYM_H_prefix_min",
+      "SYM_H_recent",
+      "pressure_peak"
+    ],
+    "alpha": 0.1,
+    "selection_scope": "development cohort only",
+    "development_leave_one_event_out_rmse": 27.28199522766642
   },
   "required_coverage_fields": [
+    "bmag",
+    "by",
     "bz",
     "speed",
     "density",
-    "pressure"
+    "pressure",
+    "ae",
+    "al",
+    "symh"
   ],
   "gap_fields": [
+    "bmag",
+    "by",
     "bz",
     "speed",
-    "pressure"
+    "density",
+    "pressure",
+    "ae",
+    "al",
+    "symh"
   ],
   "minimum_coverage": 0.9,
   "maximum_gap_minutes": 15,
+  "minimum_development_events": 20,
   "minimum_independent_events": 20,
   "minimum_rmse_improvement": 0.05,
   "minimum_bootstrap_probability": 0.9,
+  "bootstrap_replicates": 10000,
+  "bootstrap_seed": 12012,
   "required_baselines": [
     "V_Bs",
     "I_Q",
     "Newell",
     "Burton_OBrien_McPherron"
   ],
-  "events": [
+  "development_events": [
     {
-      "event_id": "E2001-0331",
-      "sheet_tab": "E2001_0331",
-      "months": [
-        "200103",
-        "200104"
-      ],
-      "start": "2001-03-29T00:00:00Z",
-      "cutoff": "2001-03-29T12:00:00Z",
-      "end": "2001-04-02T00:00:00Z"
+      "event_id": "V2003-1021-2200",
+      "sheet_tab": "V2003_1021_2200",
+      "months": ["200310"],
+      "start": "2003-10-21T22:00:00Z",
+      "cutoff": "2003-10-22T10:00:00Z",
+      "end": "2003-10-24T15:00:00Z",
+      "catalog_icme_start": "2003-10-22T02:00:00Z",
+      "catalog_trigger_qualifier": null
     },
     {
-      "event_id": "E2004-1108",
-      "sheet_tab": "E2004_1108",
-      "months": [
-        "200411"
-      ],
-      "start": "2004-11-06T00:00:00Z",
-      "cutoff": "2004-11-06T12:00:00Z",
-      "end": "2004-11-11T00:00:00Z"
+      "event_id": "V2004-0122-0137",
+      "sheet_tab": "V2004_0122_0137",
+      "months": ["200401"],
+      "start": "2004-01-22T01:37:00Z",
+      "cutoff": "2004-01-22T13:37:00Z",
+      "end": "2004-01-23T17:00:00Z",
+      "catalog_icme_start": "2004-01-22T08:00:00Z",
+      "catalog_trigger_qualifier": null
     },
     {
-      "event_id": "E2005-0515",
-      "sheet_tab": "E2005_0515",
-      "months": [
-        "200505"
-      ],
-      "start": "2005-05-13T00:00:00Z",
-      "cutoff": "2005-05-13T12:00:00Z",
-      "end": "2005-05-17T00:00:00Z"
+      "event_id": "V2004-0722-1036",
+      "sheet_tab": "V2004_0722_1036",
+      "months": ["200407"],
+      "start": "2004-07-22T10:36:00Z",
+      "cutoff": "2004-07-22T22:36:00Z",
+      "end": "2004-07-24T08:00:00Z",
+      "catalog_icme_start": "2004-07-22T18:00:00Z",
+      "catalog_trigger_qualifier": null
     },
     {
-      "event_id": "E2015-0622",
-      "sheet_tab": "E2015_0622",
-      "months": [
-        "201506"
-      ],
-      "start": "2015-06-20T00:00:00Z",
-      "cutoff": "2015-06-20T12:00:00Z",
-      "end": "2015-06-25T00:00:00Z"
+      "event_id": "V2004-0725-1500",
+      "sheet_tab": "V2004_0725_1500",
+      "months": ["200407"],
+      "start": "2004-07-25T15:00:00Z",
+      "cutoff": "2004-07-26T03:00:00Z",
+      "end": "2004-07-26T22:00:00Z",
+      "catalog_icme_start": "2004-07-25T20:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2004-0829-0909",
+      "sheet_tab": "V2004_0829_0909",
+      "months": ["200408"],
+      "start": "2004-08-29T09:09:00Z",
+      "cutoff": "2004-08-29T21:09:00Z",
+      "end": "2004-08-30T22:00:00Z",
+      "catalog_icme_start": "2004-08-29T19:00:00Z",
+      "catalog_trigger_qualifier": "(W)"
+    },
+    {
+      "event_id": "V2004-1211-1340",
+      "sheet_tab": "V2004_1211_1340",
+      "months": ["200412"],
+      "start": "2004-12-11T13:40:00Z",
+      "cutoff": "2004-12-12T01:40:00Z",
+      "end": "2004-12-13T19:00:00Z",
+      "catalog_icme_start": "2004-12-12T22:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2005-0107-0922",
+      "sheet_tab": "V2005_0107_0922",
+      "months": ["200501"],
+      "start": "2005-01-07T09:22:00Z",
+      "cutoff": "2005-01-07T21:22:00Z",
+      "end": "2005-01-08T12:00:00Z",
+      "catalog_icme_start": "2005-01-07T15:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2005-0118-2100",
+      "sheet_tab": "V2005_0118_2100",
+      "months": ["200501"],
+      "start": "2005-01-18T21:00:00Z",
+      "cutoff": "2005-01-19T09:00:00Z",
+      "end": "2005-01-20T03:00:00Z",
+      "catalog_icme_start": "2005-01-18T23:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2005-0131-0900",
+      "sheet_tab": "V2005_0131_0900",
+      "months": ["200501", "200502"],
+      "start": "2005-01-31T09:00:00Z",
+      "cutoff": "2005-01-31T21:00:00Z",
+      "end": "2005-02-02T09:00:00Z",
+      "catalog_icme_start": "2005-01-31T14:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2005-0220-1200",
+      "sheet_tab": "V2005_0220_1200",
+      "months": ["200502"],
+      "start": "2005-02-20T12:00:00Z",
+      "cutoff": "2005-02-21T00:00:00Z",
+      "end": "2005-02-22T07:00:00Z",
+      "catalog_icme_start": "2005-02-20T12:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2005-0520-0300",
+      "sheet_tab": "V2005_0520_0300",
+      "months": ["200505"],
+      "start": "2005-05-20T03:00:00Z",
+      "cutoff": "2005-05-20T15:00:00Z",
+      "end": "2005-05-22T02:00:00Z",
+      "catalog_icme_start": "2005-05-20T03:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2005-0530-2300",
+      "sheet_tab": "V2005_0530_2300",
+      "months": ["200505", "200506"],
+      "start": "2005-05-30T23:00:00Z",
+      "cutoff": "2005-05-31T11:00:00Z",
+      "end": "2005-06-01T03:00:00Z",
+      "catalog_icme_start": "2005-05-31T04:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2005-0710-0337",
+      "sheet_tab": "V2005_0710_0337",
+      "months": ["200507"],
+      "start": "2005-07-10T03:37:00Z",
+      "cutoff": "2005-07-10T15:37:00Z",
+      "end": "2005-07-12T04:00:00Z",
+      "catalog_icme_start": "2005-07-10T10:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2005-0717-0134",
+      "sheet_tab": "V2005_0717_0134",
+      "months": ["200507"],
+      "start": "2005-07-17T01:34:00Z",
+      "cutoff": "2005-07-17T13:34:00Z",
+      "end": "2005-07-18T23:00:00Z",
+      "catalog_icme_start": "2005-07-17T14:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2005-0915-0600",
+      "sheet_tab": "V2005_0915_0600",
+      "months": ["200509"],
+      "start": "2005-09-15T06:00:00Z",
+      "cutoff": "2005-09-15T18:00:00Z",
+      "end": "2005-09-16T18:00:00Z",
+      "catalog_icme_start": "2005-09-15T06:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2005-1231-0000",
+      "sheet_tab": "V2005_1231_0000",
+      "months": ["200512", "200601"],
+      "start": "2005-12-31T00:00:00Z",
+      "cutoff": "2005-12-31T12:00:00Z",
+      "end": "2006-01-01T17:00:00Z",
+      "catalog_icme_start": "2005-12-31T04:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2006-0830-2000",
+      "sheet_tab": "V2006_0830_2000",
+      "months": ["200608", "200609"],
+      "start": "2006-08-30T20:00:00Z",
+      "cutoff": "2006-08-31T08:00:00Z",
+      "end": "2006-09-01T07:00:00Z",
+      "catalog_icme_start": "2006-08-30T20:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2006-1128-1300",
+      "sheet_tab": "V2006_1128_1300",
+      "months": ["200611"],
+      "start": "2006-11-28T13:00:00Z",
+      "cutoff": "2006-11-29T01:00:00Z",
+      "end": "2006-11-30T10:00:00Z",
+      "catalog_icme_start": "2006-11-29T05:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2008-1204-0400",
+      "sheet_tab": "V2008_1204_0400",
+      "months": ["200812"],
+      "start": "2008-12-04T04:00:00Z",
+      "cutoff": "2008-12-04T16:00:00Z",
+      "end": "2008-12-05T11:00:00Z",
+      "catalog_icme_start": "2008-12-04T12:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2008-1216-1159",
+      "sheet_tab": "V2008_1216_1159",
+      "months": ["200812"],
+      "start": "2008-12-16T11:59:00Z",
+      "cutoff": "2008-12-16T23:59:00Z",
+      "end": "2008-12-17T14:00:00Z",
+      "catalog_icme_start": "2008-12-17T03:00:00Z",
+      "catalog_trigger_qualifier": null
+    }
+  ],
+  "validation_events": [
+    {
+      "event_id": "V2009-0603-1600",
+      "sheet_tab": "V2009_0603_1600",
+      "months": ["200906"],
+      "start": "2009-06-03T16:00:00Z",
+      "cutoff": "2009-06-04T04:00:00Z",
+      "end": "2009-06-05T16:00:00Z",
+      "catalog_icme_start": "2009-06-04T02:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2009-1219-1000",
+      "sheet_tab": "V2009_1219_1000",
+      "months": ["200912"],
+      "start": "2009-12-19T10:00:00Z",
+      "cutoff": "2009-12-19T22:00:00Z",
+      "end": "2009-12-20T17:00:00Z",
+      "catalog_icme_start": "2009-12-19T13:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2010-0219-1500",
+      "sheet_tab": "V2010_0219_1500",
+      "months": ["201002"],
+      "start": "2010-02-19T15:00:00Z",
+      "cutoff": "2010-02-20T03:00:00Z",
+      "end": "2010-02-20T18:00:00Z",
+      "catalog_icme_start": "2010-02-19T15:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2010-0411-1304",
+      "sheet_tab": "V2010_0411_1304",
+      "months": ["201004"],
+      "start": "2010-04-11T13:04:00Z",
+      "cutoff": "2010-04-12T01:04:00Z",
+      "end": "2010-04-12T15:00:00Z",
+      "catalog_icme_start": "2010-04-12T01:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2010-0528-0258",
+      "sheet_tab": "V2010_0528_0258",
+      "months": ["201005"],
+      "start": "2010-05-28T02:58:00Z",
+      "cutoff": "2010-05-28T14:58:00Z",
+      "end": "2010-05-29T17:00:00Z",
+      "catalog_icme_start": "2010-05-28T19:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2010-0803-1741",
+      "sheet_tab": "V2010_0803_1741",
+      "months": ["201008"],
+      "start": "2010-08-03T17:41:00Z",
+      "cutoff": "2010-08-04T05:41:00Z",
+      "end": "2010-08-05T00:00:00Z",
+      "catalog_icme_start": "2010-08-04T10:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2011-0124-0700",
+      "sheet_tab": "V2011_0124_0700",
+      "months": ["201101"],
+      "start": "2011-01-24T07:00:00Z",
+      "cutoff": "2011-01-24T19:00:00Z",
+      "end": "2011-01-25T12:00:00Z",
+      "catalog_icme_start": "2011-01-24T10:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2011-0805-1751",
+      "sheet_tab": "V2011_0805_1751",
+      "months": ["201108"],
+      "start": "2011-08-05T17:51:00Z",
+      "cutoff": "2011-08-06T05:51:00Z",
+      "end": "2011-08-07T22:00:00Z",
+      "catalog_icme_start": "2011-08-06T22:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2012-0121-0501",
+      "sheet_tab": "V2012_0121_0501",
+      "months": ["201201"],
+      "start": "2012-01-21T05:01:00Z",
+      "cutoff": "2012-01-21T17:01:00Z",
+      "end": "2012-01-22T08:00:00Z",
+      "catalog_icme_start": "2012-01-21T06:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2012-0516-1600",
+      "sheet_tab": "V2012_0516_1600",
+      "months": ["201205"],
+      "start": "2012-05-16T16:00:00Z",
+      "cutoff": "2012-05-17T04:00:00Z",
+      "end": "2012-05-17T22:00:00Z",
+      "catalog_icme_start": "2012-05-16T16:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2012-1126-0512",
+      "sheet_tab": "V2012_1126_0512",
+      "months": ["201211"],
+      "start": "2012-11-26T05:12:00Z",
+      "cutoff": "2012-11-26T17:12:00Z",
+      "end": "2012-11-28T05:00:00Z",
+      "catalog_icme_start": "2012-11-26T12:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2013-0118-1237",
+      "sheet_tab": "V2013_0118_1237",
+      "months": ["201301"],
+      "start": "2013-01-18T12:37:00Z",
+      "cutoff": "2013-01-19T00:37:00Z",
+      "end": "2013-01-19T17:00:00Z",
+      "catalog_icme_start": "2013-01-19T00:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2013-0627-1438",
+      "sheet_tab": "V2013_0627_1438",
+      "months": ["201306"],
+      "start": "2013-06-27T14:38:00Z",
+      "cutoff": "2013-06-28T02:38:00Z",
+      "end": "2013-06-29T12:00:00Z",
+      "catalog_icme_start": "2013-06-28T02:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2014-0220-0318",
+      "sheet_tab": "V2014_0220_0318",
+      "months": ["201402"],
+      "start": "2014-02-20T03:18:00Z",
+      "cutoff": "2014-02-20T15:18:00Z",
+      "end": "2014-02-22T12:00:00Z",
+      "catalog_icme_start": "2014-02-21T02:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2014-0418-1900",
+      "sheet_tab": "V2014_0418_1900",
+      "months": ["201404"],
+      "start": "2014-04-18T19:00:00Z",
+      "cutoff": "2014-04-19T07:00:00Z",
+      "end": "2014-04-20T00:00:00Z",
+      "catalog_icme_start": "2014-04-18T19:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2014-0917-0200",
+      "sheet_tab": "V2014_0917_0200",
+      "months": ["201409"],
+      "start": "2014-09-17T02:00:00Z",
+      "cutoff": "2014-09-17T14:00:00Z",
+      "end": "2014-09-18T20:00:00Z",
+      "catalog_icme_start": "2014-09-17T02:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2015-0410-0000",
+      "sheet_tab": "V2015_0410_0000",
+      "months": ["201504"],
+      "start": "2015-04-10T00:00:00Z",
+      "cutoff": "2015-04-10T12:00:00Z",
+      "end": "2015-04-11T09:00:00Z",
+      "catalog_icme_start": "2015-04-10T13:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2015-0622-1833",
+      "sheet_tab": "V2015_0622_1833",
+      "months": ["201506"],
+      "start": "2015-06-22T18:33:00Z",
+      "cutoff": "2015-06-23T06:33:00Z",
+      "end": "2015-06-24T14:00:00Z",
+      "catalog_icme_start": "2015-06-23T02:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2015-1219-1616",
+      "sheet_tab": "V2015_1219_1616",
+      "months": ["201512"],
+      "start": "2015-12-19T16:16:00Z",
+      "cutoff": "2015-12-20T04:16:00Z",
+      "end": "2015-12-21T20:00:00Z",
+      "catalog_icme_start": "2015-12-20T03:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2019-0513-2326",
+      "sheet_tab": "V2019_0513_2326",
+      "months": ["201905"],
+      "start": "2019-05-13T23:26:00Z",
+      "cutoff": "2019-05-14T11:26:00Z",
+      "end": "2019-05-15T16:00:00Z",
+      "catalog_icme_start": "2019-05-14T06:00:00Z",
+      "catalog_trigger_qualifier": null
     }
   ]
 }

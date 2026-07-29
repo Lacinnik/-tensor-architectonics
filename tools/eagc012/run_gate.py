@@ -5,6 +5,7 @@ import hashlib
 import json
 import math
 import os
+import random
 import shutil
 import statistics
 import urllib.request
@@ -26,6 +27,7 @@ IDX = {
     "hour": 2,
     "minute": 3,
     "bmag": 13,
+    "by": 17,
     "bz": 18,
     "speed": 21,
     "density": 25,
@@ -36,6 +38,7 @@ IDX = {
 }
 FILLS = {
     "bmag": 9999.99,
+    "by": 9999.99,
     "bz": 9999.99,
     "speed": 99999.9,
     "density": 999.99,
@@ -44,8 +47,14 @@ FILLS = {
     "al": 99999.0,
     "symh": 99999.0,
 }
-IMPLEMENTED_BASELINES = {"V_Bs", "I_Q"}
-SCORING_FIELDS = ("I_Q", "V_Bs", "EAGC")
+IMPLEMENTED_BASELINES = {
+    "V_Bs",
+    "I_Q",
+    "Newell",
+    "Burton_OBrien_McPherron",
+}
+SCORING_FIELDS = (*sorted(IMPLEMENTED_BASELINES), "EAGC")
+COHORTS = ("development", "validation")
 
 
 @dataclass(frozen=True)
@@ -56,12 +65,14 @@ class Event:
     start: datetime
     cutoff: datetime
     end: datetime
+    cohort: str
 
 
 @dataclass(frozen=True)
 class Row:
     t: datetime
     bmag: float | None
+    by: float | None
     bz: float | None
     speed: float | None
     density: float | None
@@ -101,8 +112,17 @@ def load_policy(path: Path = POLICY_PATH) -> dict[str, Any]:
         "minimum_coverage",
         "maximum_gap_minutes",
         "minimum_independent_events",
+        "minimum_development_events",
+        "minimum_rmse_improvement",
+        "minimum_bootstrap_probability",
+        "bootstrap_replicates",
+        "bootstrap_seed",
         "required_baselines",
-        "events",
+        "event_catalog",
+        "model_references",
+        "eagc_model",
+        "development_events",
+        "validation_events",
     }
     missing = sorted(required - policy.keys())
     if missing:
@@ -128,6 +148,49 @@ def load_policy(path: Path = POLICY_PATH) -> dict[str, Any]:
         or minimum_events <= 0
     ):
         raise ValueError("minimum_independent_events must be a positive integer")
+    minimum_improvement = policy["minimum_rmse_improvement"]
+    if (
+        isinstance(minimum_improvement, bool)
+        or not isinstance(minimum_improvement, (int, float))
+        or not 0 < minimum_improvement < 1
+    ):
+        raise ValueError("minimum_rmse_improvement must be in (0, 1)")
+    bootstrap_probability = policy["minimum_bootstrap_probability"]
+    if (
+        isinstance(bootstrap_probability, bool)
+        or not isinstance(bootstrap_probability, (int, float))
+        or not 0 < bootstrap_probability <= 1
+    ):
+        raise ValueError("minimum_bootstrap_probability must be in (0, 1]")
+    bootstrap_replicates = policy["bootstrap_replicates"]
+    if (
+        isinstance(bootstrap_replicates, bool)
+        or not isinstance(bootstrap_replicates, int)
+        or bootstrap_replicates < 1000
+    ):
+        raise ValueError("bootstrap_replicates must be an integer of at least 1000")
+    bootstrap_seed = policy["bootstrap_seed"]
+    if isinstance(bootstrap_seed, bool) or not isinstance(bootstrap_seed, int):
+        raise ValueError("bootstrap_seed must be an integer")
+    event_catalog = policy["event_catalog"]
+    if (
+        not isinstance(event_catalog, dict)
+        or not isinstance(event_catalog.get("url"), str)
+        or not event_catalog["url"].startswith("https://")
+        or not isinstance(event_catalog.get("selection_rule"), str)
+        or not event_catalog["selection_rule"]
+    ):
+        raise ValueError("invalid event_catalog")
+    model_references = policy["model_references"]
+    if (
+        not isinstance(model_references, dict)
+        or any(
+            not isinstance(model_references.get(name), str)
+            or not model_references[name].startswith("https://")
+            for name in ("Newell", "Burton_OBrien_McPherron")
+        )
+    ):
+        raise ValueError("invalid model_references")
 
     valid_fields = {field.name for field in fields(Row)} - {"t"}
     required_fields = policy["required_coverage_fields"]
@@ -148,8 +211,17 @@ def load_policy(path: Path = POLICY_PATH) -> dict[str, Any]:
             raise ValueError(f"invalid {label}")
     if not set(gap_fields).issubset(required_fields):
         raise ValueError("gap_fields must be a subset of required_coverage_fields")
-    if not isinstance(policy["events"], list) or not policy["events"]:
-        raise ValueError("policy must register at least one event")
+    for cohort in COHORTS:
+        configured = policy[f"{cohort}_events"]
+        if not isinstance(configured, list) or not configured:
+            raise ValueError(f"policy must register at least one {cohort} event")
+    minimum_development = policy["minimum_development_events"]
+    if (
+        isinstance(minimum_development, bool)
+        or not isinstance(minimum_development, int)
+        or minimum_development <= 0
+    ):
+        raise ValueError("minimum_development_events must be a positive integer")
     if (
         not isinstance(policy["required_baselines"], list)
         or not policy["required_baselines"]
@@ -160,6 +232,22 @@ def load_policy(path: Path = POLICY_PATH) -> dict[str, Any]:
         or len(policy["required_baselines"]) != len(set(policy["required_baselines"]))
     ):
         raise ValueError("invalid required_baselines")
+    model = policy["eagc_model"]
+    if (
+        not isinstance(model, dict)
+        or model.get("kind") != "standardized_ridge"
+        or not isinstance(model.get("features"), list)
+        or not model["features"]
+        or len(model["features"]) != len(set(model["features"]))
+        or any(
+            not isinstance(name, str) or not name
+            for name in model["features"]
+        )
+        or isinstance(model.get("alpha"), bool)
+        or not isinstance(model.get("alpha"), (int, float))
+        or model["alpha"] <= 0
+    ):
+        raise ValueError("invalid eagc_model")
     return policy
 
 
@@ -171,17 +259,20 @@ def load_events(policy: dict[str, Any]) -> list[Event]:
     if prefix_minutes <= 0:
         raise ValueError("forecast cutoff prefix must be positive")
 
-    events = [
-        Event(
-            event_id=item["event_id"],
-            sheet_tab=item["sheet_tab"],
-            months=tuple(item["months"]),
-            start=dt(item["start"]),
-            cutoff=dt(item["cutoff"]),
-            end=dt(item["end"]),
+    events = []
+    for cohort in COHORTS:
+        events.extend(
+            Event(
+                event_id=item["event_id"],
+                sheet_tab=item["sheet_tab"],
+                months=tuple(item["months"]),
+                start=dt(item["start"]),
+                cutoff=dt(item["cutoff"]),
+                end=dt(item["end"]),
+                cohort=cohort,
+            )
+            for item in policy[f"{cohort}_events"]
         )
-        for item in policy["events"]
-    ]
     for event in events:
         for label, value in (
             ("event_id", event.event_id),
@@ -339,6 +430,7 @@ def parse(
                 Row(
                     timestamp,
                     clean("bmag", parts[IDX["bmag"]]),
+                    clean("by", parts[IDX["by"]]),
                     clean("bz", parts[IDX["bz"]]),
                     clean("speed", parts[IDX["speed"]]),
                     clean("density", parts[IDX["density"]]),
@@ -382,7 +474,105 @@ def q(value: float, low: float, high: float) -> float:
     return max(0.0, min(1.0, (value - low) / (high - low)))
 
 
-def feature_vector(rows: list[Row], cutoff: datetime) -> dict[str, float | int] | None:
+def interpolate_values(
+    rows: list[Row], key: str, maximum_gap: int
+) -> list[float] | None:
+    values = [
+        float(value) if (value := getattr(row, key)) is not None else None
+        for row in rows
+    ]
+    if not values or all(value is None for value in values):
+        return None
+    index = 0
+    while index < len(values):
+        if values[index] is not None:
+            index += 1
+            continue
+        start = index
+        while index < len(values) and values[index] is None:
+            index += 1
+        stop = index
+        if stop - start > maximum_gap:
+            return None
+        left = values[start - 1] if start else None
+        right = values[stop] if stop < len(values) else None
+        if left is None and right is None:
+            return None
+        if left is None:
+            values[start:stop] = [right] * (stop - start)
+        elif right is None:
+            values[start:stop] = [left] * (stop - start)
+        else:
+            width = stop - start + 1
+            values[start:stop] = [
+                left + (right - left) * offset / width
+                for offset in range(1, stop - start + 1)
+            ]
+    return [float(value) for value in values]
+
+
+def newell_coupling(rows: list[Row]) -> float | None:
+    """Mean Newell et al. (2007) dPhi/dt coupling over the prefix."""
+    values: list[float] = []
+    for row in rows:
+        if row.by is None or row.bz is None or row.speed is None:
+            continue
+        transverse = math.hypot(row.by, row.bz)
+        if transverse <= 0 or row.speed <= 0:
+            values.append(0.0)
+            continue
+        clock_angle = math.atan2(abs(row.by), row.bz)
+        values.append(
+            row.speed ** (4 / 3)
+            * transverse ** (2 / 3)
+            * math.sin(clock_angle / 2) ** (8 / 3)
+        )
+    return statistics.fmean(values) if values else None
+
+
+def burton_obrien_mcpherron(
+    rows: list[Row], maximum_gap: int = 15
+) -> float | None:
+    """Return the OM model's peak disturbance magnitude in the prefix.
+
+    The pressure-corrected SYM-H state is integrated at one-minute cadence
+    using O'Brien and McPherron (2000), with short quality-permitted gaps
+    linearly interpolated before integration.
+    """
+    speed = interpolate_values(rows, "speed", maximum_gap)
+    bz = interpolate_values(rows, "bz", maximum_gap)
+    pressure = interpolate_values(rows, "pressure", maximum_gap)
+    symh = interpolate_values(rows, "symh", maximum_gap)
+    if any(series is None for series in (speed, bz, pressure, symh)):
+        return None
+    assert speed is not None
+    assert bz is not None
+    assert pressure is not None
+    assert symh is not None
+
+    dst_star = symh[0] - 7.26 * math.sqrt(max(pressure[0], 0.0)) + 11.0
+    minimum_prediction = symh[0]
+    for index in range(1, len(rows)):
+        electric_field = speed[index] * max(0.0, -bz[index]) * 1e-3
+        injection = (
+            -4.4 * (electric_field - 0.49)
+            if electric_field > 0.49
+            else 0.0
+        )
+        decay_hours = 2.4 * math.exp(9.74 / (4.69 + electric_field))
+        dst_star += (injection - dst_star / decay_hours) / 60
+        prediction = (
+            dst_star
+            + 7.26 * math.sqrt(max(pressure[index], 0.0))
+            - 11.0
+        )
+        minimum_prediction = min(minimum_prediction, prediction)
+    return max(0.0, -minimum_prediction)
+
+
+def feature_vector(
+    rows: list[Row], cutoff: datetime, maximum_gap: int = 15
+) -> dict[str, float | int] | None:
     prefix = [row for row in rows if row.t < cutoff]
     valid = [
         row
@@ -443,6 +633,9 @@ def feature_vector(rows: list[Row], cutoff: datetime) -> dict[str, float | int] 
     )
 
     symh = [row.symh for row in prefix if row.symh is not None]
+    recent_symh = [
+        row.symh for row in prefix[-60:] if row.symh is not None
+    ]
     ae = [row.ae for row in prefix if row.ae is not None]
     al = [row.al for row in prefix if row.al is not None]
     density = [row.density for row in prefix if row.density is not None]
@@ -471,8 +664,19 @@ def feature_vector(rows: list[Row], cutoff: datetime) -> dict[str, float | int] 
         "valid_feature_rows": len(valid),
         "fronts": front_count,
         "south_hours": round(south_hours, 3),
+        "SYM_H_prefix_min": -min(symh) if symh else None,
+        "SYM_H_recent": (
+            -statistics.median(recent_symh) if recent_symh else None
+        ),
+        "pressure_peak": max(
+            row.pressure for row in prefix if row.pressure is not None
+        ),
         "I_Q": iq,
         "V_Bs": vb,
+        "Newell": newell_coupling(prefix),
+        "Burton_OBrien_McPherron": burton_obrien_mcpherron(
+            prefix, maximum_gap
+        ),
         "Lambda": lambda_arrival,
         "Pi": pi_e,
         "EAGC": iq * (0.5 + lambda_arrival) * (0.5 + pi_e),
@@ -554,29 +758,204 @@ def quality_result(
     )
 
 
-def fit_loocv(items: list[dict[str, Any]], key: str) -> list[float]:
-    predictions: list[float] = []
-    for index, item in enumerate(items):
+def solve_linear_system(
+    matrix: list[list[float]], vector: list[float]
+) -> list[float]:
+    augmented = [[*row, value] for row, value in zip(matrix, vector)]
+    for column in range(len(vector)):
+        pivot = max(
+            range(column, len(vector)),
+            key=lambda row: abs(augmented[row][column]),
+        )
+        augmented[column], augmented[pivot] = (
+            augmented[pivot],
+            augmented[column],
+        )
+        divisor = augmented[column][column]
+        if abs(divisor) < 1e-12:
+            raise ValueError("singular regression system")
+        augmented[column] = [
+            value / divisor for value in augmented[column]
+        ]
+        for row in range(len(vector)):
+            if row == column:
+                continue
+            factor = augmented[row][column]
+            augmented[row] = [
+                value - factor * pivot_value
+                for value, pivot_value in zip(
+                    augmented[row], augmented[column]
+                )
+            ]
+    return [row[-1] for row in augmented]
+
+
+def fit_univariate(
+    items: list[dict[str, Any]], key: str
+) -> dict[str, Any]:
+    xs = [math.log1p(float(item[key])) for item in items]
+    ys = [-float(item["SYM_H_min"]) for item in items]
+    mean_x = statistics.fmean(xs)
+    mean_y = statistics.fmean(ys)
+    denominator = sum((value - mean_x) ** 2 for value in xs)
+    slope = (
+        sum(
+            (x - mean_x) * (y - mean_y)
+            for x, y in zip(xs, ys)
+        )
+        / denominator
+        if denominator
+        else 0.0
+    )
+    return {
+        "kind": "log_linear",
+        "feature": key,
+        "intercept": mean_y - slope * mean_x,
+        "slope": slope,
+    }
+
+
+def predict_univariate(
+    model: dict[str, Any], item: dict[str, Any]
+) -> float:
+    magnitude = float(model["intercept"]) + float(model["slope"]) * math.log1p(
+        float(item[model["feature"]])
+    )
+    return -max(0.0, magnitude)
+
+
+def fit_ridge(
+    items: list[dict[str, Any]],
+    feature_names: list[str],
+    alpha: float,
+) -> dict[str, Any]:
+    predictors = [
+        [float(item[name]) for name in feature_names] for item in items
+    ]
+    targets = [-float(item["SYM_H_min"]) for item in items]
+    means = [
+        statistics.fmean(row[column] for row in predictors)
+        for column in range(len(feature_names))
+    ]
+    scales = [
+        statistics.pstdev(row[column] for row in predictors) or 1.0
+        for column in range(len(feature_names))
+    ]
+    standardized = [
+        [
+            (value - means[column]) / scales[column]
+            for column, value in enumerate(row)
+        ]
+        for row in predictors
+    ]
+    intercept = statistics.fmean(targets)
+    centered_targets = [value - intercept for value in targets]
+    system = [
+        [
+            sum(row[left] * row[right] for row in standardized)
+            + (alpha if left == right else 0.0)
+            for right in range(len(feature_names))
+        ]
+        for left in range(len(feature_names))
+    ]
+    target = [
+        sum(
+            row[column] * value
+            for row, value in zip(standardized, centered_targets)
+        )
+        for column in range(len(feature_names))
+    ]
+    coefficients = solve_linear_system(system, target)
+    return {
+        "kind": "standardized_ridge",
+        "features": feature_names,
+        "alpha": alpha,
+        "intercept": intercept,
+        "coefficients": coefficients,
+        "means": means,
+        "scales": scales,
+    }
+
+
+def predict_ridge(model: dict[str, Any], item: dict[str, Any]) -> float:
+    magnitude = float(model["intercept"])
+    for name, coefficient, mean, scale in zip(
+        model["features"],
+        model["coefficients"],
+        model["means"],
+        model["scales"],
+    ):
+        magnitude += (
+            float(coefficient)
+            * (float(item[name]) - float(mean))
+            / float(scale)
+        )
+    return -max(0.0, magnitude)
+
+
+def fit_models(
+    development: list[dict[str, Any]], policy: dict[str, Any]
+) -> dict[str, dict[str, Any]]:
+    models = {
+        baseline: fit_univariate(development, baseline)
+        for baseline in policy["required_baselines"]
+    }
+    configured = policy["eagc_model"]
+    models["EAGC"] = fit_ridge(
+        development,
+        list(configured["features"]),
+        float(configured["alpha"]),
+    )
+    return models
+
+
+def predict_models(
+    models: dict[str, dict[str, Any]],
+    items: list[dict[str, Any]],
+) -> dict[str, list[float]]:
+    return {
+        name: [
+            (
+                predict_ridge(model, item)
+                if name == "EAGC"
+                else predict_univariate(model, item)
+            )
+            for item in items
+        ]
+        for name, model in models.items()
+    }
+
+
+def cross_validated_predictions(
+    development: list[dict[str, Any]], policy: dict[str, Any]
+) -> dict[str, list[float]]:
+    predictions = {
+        name: [] for name in (*policy["required_baselines"], "EAGC")
+    }
+    for omitted, item in enumerate(development):
         train = [
             candidate
-            for candidate_index, candidate in enumerate(items)
-            if candidate_index != index
-            and candidate.get(key) is not None
-            and candidate.get("SYM_H_min") is not None
+            for index, candidate in enumerate(development)
+            if index != omitted
         ]
-        xs = [math.log1p(float(candidate[key])) for candidate in train]
-        ys = [-float(candidate["SYM_H_min"]) for candidate in train]
-        if len(xs) < 2 or statistics.pvariance(xs) == 0:
-            prediction = statistics.mean(ys) if ys else 0
-        else:
-            mean_x = statistics.mean(xs)
-            mean_y = statistics.mean(ys)
-            slope = sum(
-                (x - mean_x) * (y - mean_y) for x, y in zip(xs, ys)
-            ) / sum((x - mean_x) ** 2 for x in xs)
-            intercept = mean_y - slope * mean_x
-            prediction = intercept + slope * math.log1p(float(item[key]))
-        predictions.append(-max(0, prediction))
+        fold_predictions = predict_models(fit_models(train, policy), [item])
+        for name in predictions:
+            predictions[name].append(fold_predictions[name][0])
+    return predictions
+
+
+def fit_loocv(items: list[dict[str, Any]], key: str) -> list[float]:
+    """Backward-compatible univariate leave-one-event-out predictions."""
+    predictions: list[float] = []
+    for omitted, item in enumerate(items):
+        train = [
+            candidate
+            for index, candidate in enumerate(items)
+            if index != omitted
+        ]
+        predictions.append(
+            predict_univariate(fit_univariate(train, key), item)
+        )
     return predictions
 
 
@@ -587,31 +966,206 @@ def rmse(actual: list[float], predicted: list[float]) -> float:
     )
 
 
-def decision_for(
+def relative_improvement(candidate_rmse: float, baseline_rmse: float) -> float:
+    if baseline_rmse == 0:
+        return 0.0 if candidate_rmse == 0 else -1.0
+    return (baseline_rmse - candidate_rmse) / baseline_rmse
+
+
+def paired_bootstrap_probability(
+    actual: list[float],
+    candidate: list[float],
+    baseline: list[float],
+    *,
+    replicates: int,
+    seed: int,
+) -> float:
+    """Probability that candidate MSE is lower under paired resampling."""
+    differences = [
+        (observed - control) ** 2 - (observed - estimate) ** 2
+        for observed, estimate, control in zip(actual, candidate, baseline)
+    ]
+    rng = random.Random(seed)
+    wins = 0
+    for _ in range(replicates):
+        mean_difference = statistics.fmean(
+            differences[rng.randrange(len(differences))]
+            for _ in range(len(differences))
+        )
+        if mean_difference > 0:
+            wins += 1
+    return wins / replicates
+
+
+def single_event_improvements(
+    event_ids: list[str],
+    actual: list[float],
+    candidate: list[float],
+    baseline: list[float],
+) -> dict[str, float]:
+    improvements: dict[str, float] = {}
+    for omitted in range(len(actual)):
+        retained = [index for index in range(len(actual)) if index != omitted]
+        candidate_rmse = rmse(
+            [actual[index] for index in retained],
+            [candidate[index] for index in retained],
+        )
+        baseline_rmse = rmse(
+            [actual[index] for index in retained],
+            [baseline[index] for index in retained],
+        )
+        improvements[event_ids[omitted]] = relative_improvement(
+            candidate_rmse, baseline_rmse
+        )
+    return improvements
+
+
+def evaluate_gate(
     summaries: list[dict[str, Any]], policy: dict[str, Any]
-) -> tuple[str, list[str]]:
+) -> tuple[str, list[str], dict[str, Any]]:
     blockers: list[str] = []
+    development = [
+        item for item in summaries if item.get("cohort") == "development"
+    ]
+    validation = [
+        item for item in summaries if item.get("cohort") == "validation"
+    ]
+    required_features = {
+        *policy["required_baselines"],
+        *policy["eagc_model"]["features"],
+    }
     non_scorable = [
         item["event_id"]
         for item in summaries
         if item["quality_status"] != "SCORABLE"
         or item.get("SYM_H_min") is None
-        or any(item.get(key) is None for key in SCORING_FIELDS)
+        or any(item.get(key) is None for key in required_features)
     ]
-    data_blocked = bool(non_scorable)
     if non_scorable:
         blockers.append("non-scorable registered events: " + ", ".join(non_scorable))
-    minimum = int(policy["minimum_independent_events"])
-    if len(summaries) < minimum:
-        blockers.append(f"sample {len(summaries)} is below preregistered minimum {minimum}")
+    minimum_development = int(policy["minimum_development_events"])
+    minimum_validation = int(policy["minimum_independent_events"])
+    if len(development) < minimum_development:
+        blockers.append(
+            f"development sample {len(development)} is below preregistered "
+            f"minimum {minimum_development}"
+        )
+    if len(validation) < minimum_validation:
+        blockers.append(
+            f"validation sample {len(validation)} is below preregistered "
+            f"minimum {minimum_validation}"
+        )
     missing_baselines = sorted(set(policy["required_baselines"]) - IMPLEMENTED_BASELINES)
     if missing_baselines:
-        blockers.append("required control baselines not implemented: " + ", ".join(missing_baselines))
-    if data_blocked:
-        return "HOLD-DATA", blockers
-    if blockers:
-        return "HOLD-SAMPLE", blockers
-    return "HOLD-SAMPLE", ["PASS evaluation is not implemented without every acceptance gate"]
+        blockers.append(
+            "required control baselines not implemented: "
+            + ", ".join(missing_baselines)
+        )
+    if non_scorable:
+        return "HOLD-DATA", blockers, {}
+    if (
+        len(development) < minimum_development
+        or len(validation) < minimum_validation
+        or missing_baselines
+    ):
+        return "HOLD-SAMPLE", blockers, {}
+
+    models = fit_models(development, policy)
+    predictions = predict_models(models, validation)
+    actual = [float(item["SYM_H_min"]) for item in validation]
+    event_ids = [str(item["event_id"]) for item in validation]
+    rmses = {key: rmse(actual, prediction) for key, prediction in predictions.items()}
+    development_actual = [
+        float(item["SYM_H_min"]) for item in development
+    ]
+    development_predictions = cross_validated_predictions(
+        development, policy
+    )
+    development_rmse = {
+        name: rmse(development_actual, prediction)
+        for name, prediction in development_predictions.items()
+    }
+    minimum_improvement = float(policy["minimum_rmse_improvement"])
+    minimum_probability = float(policy["minimum_bootstrap_probability"])
+    comparisons: dict[str, Any] = {}
+    acceptance_failed = False
+    for baseline in policy["required_baselines"]:
+        improvement = relative_improvement(rmses["EAGC"], rmses[baseline])
+        probability = paired_bootstrap_probability(
+            actual,
+            predictions["EAGC"],
+            predictions[baseline],
+            replicates=int(policy["bootstrap_replicates"]),
+            seed=int(policy["bootstrap_seed"]),
+        )
+        omitted_improvements = single_event_improvements(
+            event_ids,
+            actual,
+            predictions["EAGC"],
+            predictions[baseline],
+        )
+        worst_event, worst_improvement = min(
+            omitted_improvements.items(), key=lambda item: item[1]
+        )
+        improvement_pass = improvement >= minimum_improvement
+        bootstrap_pass = probability >= minimum_probability
+        single_event_pass = worst_improvement >= minimum_improvement
+        comparisons[baseline] = {
+            "rmse_improvement": improvement,
+            "bootstrap_probability": probability,
+            "minimum_leave_one_event_out_improvement": worst_improvement,
+            "worst_omitted_event": worst_event,
+            "rmse_gate_pass": improvement_pass,
+            "bootstrap_gate_pass": bootstrap_pass,
+            "single_event_gate_pass": single_event_pass,
+        }
+        if not improvement_pass:
+            blockers.append(
+                f"EAGC RMSE improvement vs {baseline} is {improvement:.6f}, "
+                f"below {minimum_improvement:.6f}"
+            )
+        if not bootstrap_pass:
+            blockers.append(
+                f"EAGC bootstrap probability vs {baseline} is {probability:.6f}, "
+                f"below {minimum_probability:.6f}"
+            )
+        if not single_event_pass:
+            blockers.append(
+                f"EAGC improvement vs {baseline} falls to "
+                f"{worst_improvement:.6f} when {worst_event} is omitted"
+            )
+        acceptance_failed = acceptance_failed or not (
+            improvement_pass and bootstrap_pass and single_event_pass
+        )
+    details = {
+        "rmse": rmses,
+        "development_leave_one_event_out_rmse": development_rmse,
+        "comparisons": comparisons,
+        "bootstrap_replicates": int(policy["bootstrap_replicates"]),
+        "bootstrap_seed": int(policy["bootstrap_seed"]),
+        "fitted_models": models,
+        "validation_predictions": [
+            {
+                "event_id": event_id,
+                "observed_SYM_H_min": observed,
+                **{
+                    f"{name}_prediction": predictions[name][index]
+                    for name in predictions
+                },
+            }
+            for index, (event_id, observed) in enumerate(
+                zip(event_ids, actual)
+            )
+        ],
+    }
+    return ("REJECT" if acceptance_failed else "PASS"), blockers, details
+
+
+def decision_for(
+    summaries: list[dict[str, Any]], policy: dict[str, Any]
+) -> tuple[str, list[str]]:
+    decision, blockers, _ = evaluate_gate(summaries, policy)
+    return decision, blockers
 
 
 def write_event_csv(path: Path, rows: list[Row]) -> None:
@@ -621,6 +1175,7 @@ def write_event_csv(path: Path, rows: list[Row]) -> None:
             [
                 "Time_UTC",
                 "Bmag_nT",
+                "BY_GSM_nT",
                 "BZ_GSM_nT",
                 "flow_speed_km_s",
                 "proton_density_cm3",
@@ -635,6 +1190,7 @@ def write_event_csv(path: Path, rows: list[Row]) -> None:
                 [
                     iso(row.t),
                     row.bmag,
+                    row.by,
                     row.bz,
                     row.speed,
                     row.density,
@@ -658,6 +1214,7 @@ def write_registry_csv(
         writer.writerow(
             [
                 "Time_UTC",
+                "BY_GSM_nT",
                 "BZ_GSM_nT",
                 "flow_speed_km_s",
                 "proton_density_cm3",
@@ -675,6 +1232,7 @@ def write_registry_csv(
             writer.writerow(
                 [
                     iso(row.t),
+                    row.by,
                     row.bz,
                     row.speed,
                     row.density,
@@ -690,12 +1248,27 @@ def write_registry_csv(
 
 def main() -> None:
     policy = load_policy()
-    events = load_events(policy)
+    all_events = load_events(policy)
+    requested_cohort = os.environ.get("EAGC_COHORT")
+    if requested_cohort and requested_cohort not in COHORTS:
+        raise ValueError(
+            f"EAGC_COHORT must be one of {', '.join(COHORTS)}"
+        )
+    events = [
+        event
+        for event in all_events
+        if requested_cohort is None or event.cohort == requested_cohort
+    ]
     OUT.mkdir(parents=True, exist_ok=True)
     transfer_dir = OUT / "registry_transfer"
     transfer_dir.mkdir(parents=True, exist_ok=True)
     summaries: list[dict[str, Any]] = []
     source_manifest: dict[str, Any] = {}
+    registered_by_id = {
+        item["event_id"]: item
+        for cohort in COHORTS
+        for item in policy[f"{cohort}_events"]
+    }
 
     for event in events:
         parsed: list[Row] = []
@@ -723,10 +1296,14 @@ def main() -> None:
             monotonic = False
         duplicates = len(parsed) - len({row.t for row in parsed})
         rows = minute_grid(parsed, event.start, event.end)
-        features_all = feature_vector(rows, event.cutoff)
+        features_all = feature_vector(
+            rows, event.cutoff, int(policy["maximum_gap_minutes"])
+        )
         prefix_only = [row for row in rows if row.t < event.cutoff]
         target_only = [row for row in rows if row.t >= event.cutoff]
-        features_prefix = feature_vector(prefix_only, event.cutoff)
+        features_prefix = feature_vector(
+            prefix_only, event.cutoff, int(policy["maximum_gap_minutes"])
+        )
         prefix_invariant = features_all == features_prefix
         target = target_after_cutoff(rows, event.cutoff)
         (
@@ -748,9 +1325,16 @@ def main() -> None:
             prefix_invariant=prefix_invariant,
             prefix_features_available=features_all is not None,
         )
+        registered = registered_by_id[event.event_id]
         summary: dict[str, Any] = {
             "event_id": event.event_id,
             "sheet_tab": event.sheet_tab,
+            "cohort": event.cohort,
+            **{
+                key: value
+                for key, value in registered.items()
+                if key.startswith("catalog_")
+            },
             "months": list(event.months),
             "window_start": iso(event.start),
             "forecast_cutoff": iso(event.cutoff),
@@ -788,23 +1372,62 @@ def main() -> None:
         for item in summaries
         if item["quality_status"] == "SCORABLE"
         and item.get("SYM_H_min") is not None
-        and all(item.get(key) is not None for key in SCORING_FIELDS)
+        and all(
+            item.get(key) is not None
+            for key in (
+                *policy["required_baselines"],
+                *policy["eagc_model"]["features"],
+            )
+        )
     ]
-    decision, blockers = decision_for(summaries, policy)
+    cohort_counts = {
+        cohort: sum(item["cohort"] == cohort for item in summaries)
+        for cohort in COHORTS
+    }
+    scorable_by_cohort = {
+        cohort: sum(
+            item["cohort"] == cohort
+            and item["quality_status"] == "SCORABLE"
+            for item in summaries
+        )
+        for cohort in COHORTS
+    }
+    decision, blockers, acceptance = evaluate_gate(summaries, policy)
     metrics: dict[str, Any] = {
         "n_registered": len(events),
         "n_scorable": len(scorable),
+        "registered_by_cohort": cohort_counts,
+        "scorable_by_cohort": scorable_by_cohort,
         "quality_counts": dict(Counter(item["quality_status"] for item in summaries)),
-        "minimum_required": int(policy["minimum_independent_events"]),
+        "minimum_development_required": int(
+            policy["minimum_development_events"]
+        ),
+        "minimum_validation_required": int(
+            policy["minimum_independent_events"]
+        ),
         "decision": decision,
-        "pass_eligible": False,
+        "pass_eligible": decision == "PASS",
         "blockers": blockers,
+        **acceptance,
     }
-    if len(scorable) >= 4:
-        actual = [float(item["SYM_H_min"]) for item in scorable]
-        for key in ("I_Q", "V_Bs", "EAGC"):
-            predicted = fit_loocv(scorable, key)
-            metrics[f"rmse_{key}"] = rmse(actual, predicted)
+    development_scorable = [
+        item for item in scorable if item["cohort"] == "development"
+    ]
+    if (
+        len(development_scorable)
+        >= int(policy["minimum_development_events"])
+        and "rmse" not in metrics
+    ):
+        actual = [
+            float(item["SYM_H_min"]) for item in development_scorable
+        ]
+        predictions = cross_validated_predictions(
+            development_scorable, policy
+        )
+        metrics["development_leave_one_event_out_rmse"] = {
+            name: rmse(actual, predicted)
+            for name, predicted in predictions.items()
+        }
 
     (OUT / "event_summary.json").write_text(
         json.dumps(summaries, ensure_ascii=False, indent=2), encoding="utf-8"
@@ -817,6 +1440,7 @@ def main() -> None:
     ) as target:
         fieldnames = [
             "event_id",
+            "cohort",
             "quality_status",
             "expected_rows",
             "observed_rows",
@@ -824,8 +1448,13 @@ def main() -> None:
             "prefix_invariant",
             "fronts",
             "south_hours",
+            "SYM_H_prefix_min",
+            "SYM_H_recent",
+            "pressure_peak",
             "I_Q",
             "V_Bs",
+            "Newell",
+            "Burton_OBrien_McPherron",
             "Lambda",
             "Pi",
             "EAGC",
@@ -845,27 +1474,49 @@ def main() -> None:
         "policy_sha256": sha256(POLICY_PATH),
         "runner_sha256": sha256(Path(__file__)),
         "source_files": source_manifest,
+        "event_catalog": policy["event_catalog"],
         "github_repository": os.environ.get("GITHUB_REPOSITORY"),
         "source_sha": os.environ.get("EAGC_SOURCE_SHA") or os.environ.get("GITHUB_SHA"),
         "workflow_sha": os.environ.get("GITHUB_SHA"),
         "github_run_id": os.environ.get("GITHUB_RUN_ID"),
         "implemented_baselines": sorted(IMPLEMENTED_BASELINES),
         "required_baselines": policy["required_baselines"],
-        "known_policy_deviations": [
-            "Bmag is used by the existing front detector but is not listed in the frozen Sheet parameter row",
-            "Newell and Burton/OBrien-McPherron control baselines are not implemented",
-            "bootstrap and single-event-dependence acceptance gates are not evaluated",
-        ],
+        "model_references": policy["model_references"],
+        "known_policy_deviations": [],
+        "processed_cohort": requested_cohort or "all",
     }
     (OUT / "provenance.json").write_text(
         json.dumps(provenance, ensure_ascii=False, indent=2), encoding="utf-8"
     )
     shutil.copyfile(POLICY_PATH, OUT / "policy.json")
 
-    if len(events) < int(policy["minimum_independent_events"]):
+    if any(
+        cohort_counts[cohort]
+        < int(
+            policy[
+                "minimum_development_events"
+                if cohort == "development"
+                else "minimum_independent_events"
+            ]
+        )
+        for cohort in COHORTS
+    ):
         assert metrics["decision"] != "PASS"
     if any(item["quality_status"] != "SCORABLE" for item in summaries):
         assert metrics["decision"] == "HOLD-DATA"
+    if metrics["decision"] == "PASS":
+        assert scorable_by_cohort["development"] >= int(
+            policy["minimum_development_events"]
+        )
+        assert scorable_by_cohort["validation"] >= int(
+            policy["minimum_independent_events"]
+        )
+        assert all(
+            comparison["rmse_gate_pass"]
+            and comparison["bootstrap_gate_pass"]
+            and comparison["single_event_gate_pass"]
+            for comparison in metrics["comparisons"].values()
+        )
     print(json.dumps(metrics, ensure_ascii=False))
 
 
