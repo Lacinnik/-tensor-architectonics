@@ -35,8 +35,8 @@ IDX = {
     "symh": 41,
 }
 FILLS = {
-    "bmag": 999.99,
-    "bz": 999.99,
+    "bmag": 9999.99,
+    "bz": 9999.99,
     "speed": 99999.9,
     "density": 999.99,
     "pressure": 99.99,
@@ -45,6 +45,7 @@ FILLS = {
     "symh": 99999.0,
 }
 IMPLEMENTED_BASELINES = {"V_Bs", "I_Q"}
+SCORING_FIELDS = ("I_Q", "V_Bs", "EAGC")
 
 
 @dataclass(frozen=True)
@@ -94,6 +95,7 @@ def load_policy(path: Path = POLICY_PATH) -> dict[str, Any]:
         "sensor_version",
         "dataset_id",
         "source_base",
+        "forecast_cutoff_rule",
         "required_coverage_fields",
         "gap_fields",
         "minimum_coverage",
@@ -105,10 +107,70 @@ def load_policy(path: Path = POLICY_PATH) -> dict[str, Any]:
     missing = sorted(required - policy.keys())
     if missing:
         raise ValueError(f"policy missing required keys: {missing}")
+    minimum_coverage = policy["minimum_coverage"]
+    if (
+        isinstance(minimum_coverage, bool)
+        or not isinstance(minimum_coverage, (int, float))
+        or not 0 < minimum_coverage <= 1
+    ):
+        raise ValueError("minimum_coverage must be in (0, 1]")
+    maximum_gap = policy["maximum_gap_minutes"]
+    if (
+        isinstance(maximum_gap, bool)
+        or not isinstance(maximum_gap, int)
+        or maximum_gap < 0
+    ):
+        raise ValueError("maximum_gap_minutes must be a non-negative integer")
+    minimum_events = policy["minimum_independent_events"]
+    if (
+        isinstance(minimum_events, bool)
+        or not isinstance(minimum_events, int)
+        or minimum_events <= 0
+    ):
+        raise ValueError("minimum_independent_events must be a positive integer")
+
+    valid_fields = {field.name for field in fields(Row)} - {"t"}
+    required_fields = policy["required_coverage_fields"]
+    gap_fields = policy["gap_fields"]
+    for label, configured_fields in (
+        ("required_coverage_fields", required_fields),
+        ("gap_fields", gap_fields),
+    ):
+        if (
+            not isinstance(configured_fields, list)
+            or not configured_fields
+            or any(
+                not isinstance(key, str) or key not in valid_fields
+                for key in configured_fields
+            )
+            or len(configured_fields) != len(set(configured_fields))
+        ):
+            raise ValueError(f"invalid {label}")
+    if not set(gap_fields).issubset(required_fields):
+        raise ValueError("gap_fields must be a subset of required_coverage_fields")
+    if not isinstance(policy["events"], list) or not policy["events"]:
+        raise ValueError("policy must register at least one event")
+    if (
+        not isinstance(policy["required_baselines"], list)
+        or not policy["required_baselines"]
+        or any(
+            not isinstance(name, str) or not name
+            for name in policy["required_baselines"]
+        )
+        or len(policy["required_baselines"]) != len(set(policy["required_baselines"]))
+    ):
+        raise ValueError("invalid required_baselines")
     return policy
 
 
 def load_events(policy: dict[str, Any]) -> list[Event]:
+    try:
+        prefix_minutes = int(policy["forecast_cutoff_rule"]["prefix_minutes"])
+    except (KeyError, TypeError, ValueError) as error:
+        raise ValueError("invalid forecast cutoff rule") from error
+    if prefix_minutes <= 0:
+        raise ValueError("forecast cutoff prefix must be positive")
+
     events = [
         Event(
             event_id=item["event_id"],
@@ -121,15 +183,89 @@ def load_events(policy: dict[str, Any]) -> list[Event]:
         for item in policy["events"]
     ]
     for event in events:
+        for label, value in (
+            ("event_id", event.event_id),
+            ("sheet_tab", event.sheet_tab),
+        ):
+            if (
+                not value
+                or value in {".", ".."}
+                or Path(value).name != value
+                or "\\" in value
+            ):
+                raise ValueError(f"invalid {label}: {value!r}")
+    event_ids = [event.event_id for event in events]
+    if len(event_ids) != len(set(event_ids)):
+        raise ValueError("event_id values must be unique")
+    sheet_tabs = [event.sheet_tab for event in events]
+    if len(sheet_tabs) != len(set(sheet_tabs)):
+        raise ValueError("sheet_tab values must be unique")
+
+    for event in events:
+        for label, value in (
+            ("start", event.start),
+            ("cutoff", event.cutoff),
+            ("end", event.end),
+        ):
+            if value.utcoffset() != timedelta(0):
+                raise ValueError(f"{event.event_id} {label} must use UTC")
+            if value.second or value.microsecond:
+                raise ValueError(
+                    f"{event.event_id} {label} must align to a whole minute"
+                )
         if not event.start < event.cutoff < event.end:
             raise ValueError(f"invalid cutoff ordering for {event.event_id}")
-        required_months = {
-            event.start.strftime("%Y%m"),
-            (event.end - timedelta(minutes=1)).strftime("%Y%m"),
-        }
+        expected_cutoff = event.start + timedelta(minutes=prefix_minutes)
+        if event.cutoff != expected_cutoff:
+            raise ValueError(
+                f"{event.event_id} cutoff does not match the forecast cutoff rule"
+            )
+        required_months: set[str] = set()
+        cursor = event.start
+        last_included = event.end - timedelta(minutes=1)
+        while (cursor.year, cursor.month) <= (
+            last_included.year,
+            last_included.month,
+        ):
+            required_months.add(cursor.strftime("%Y%m"))
+            if cursor.month == 12:
+                cursor = cursor.replace(
+                    year=cursor.year + 1,
+                    month=1,
+                    day=1,
+                    hour=0,
+                    minute=0,
+                    second=0,
+                    microsecond=0,
+                )
+            else:
+                cursor = cursor.replace(
+                    month=cursor.month + 1,
+                    day=1,
+                    hour=0,
+                    minute=0,
+                    second=0,
+                    microsecond=0,
+                )
         if not required_months.issubset(event.months):
             raise ValueError(
                 f"{event.event_id} does not list every month crossed by its window"
+            )
+        if len(event.months) != len(required_months) or set(event.months) != required_months:
+            raise ValueError(
+                f"{event.event_id} lists months outside its registered window"
+            )
+        if event.months != tuple(sorted(required_months)):
+            raise ValueError(
+                f"{event.event_id} months must be listed in chronological order"
+            )
+
+    ordered_events = sorted(events, key=lambda event: event.start)
+    for previous, current in zip(ordered_events, ordered_events[1:]):
+        if current.start < previous.end:
+            raise ValueError(
+                f"registered event windows overlap: "
+                f"{previous.event_id}, {current.event_id}"
             )
     return events
 
@@ -349,8 +485,10 @@ def target_after_cutoff(rows: list[Row], cutoff: datetime) -> float | None:
 
 
 def quality_result(
-    rows: list[Row],
+    feature_rows: list[Row],
     *,
+    target_rows: list[Row] | None = None,
+    target_fields: tuple[str, ...] = ("symh",),
     required_fields: list[str],
     gap_fields: list[str],
     minimum_coverage: float,
@@ -358,22 +496,62 @@ def quality_result(
     monotonic: bool,
     duplicates: int,
     prefix_invariant: bool,
-) -> tuple[str, dict[str, float], dict[str, int], list[str]]:
-    coverages = {key: coverage(rows, key) for key in required_fields}
-    gaps = {key: max_gap(rows, key) for key in gap_fields}
+    prefix_features_available: bool = True,
+) -> tuple[
+    str,
+    dict[str, float],
+    dict[str, int],
+    dict[str, float],
+    dict[str, int],
+    list[str],
+]:
+    coverages = {key: coverage(feature_rows, key) for key in required_fields}
+    gaps = {key: max_gap(feature_rows, key) for key in gap_fields}
+    target_coverages = (
+        {key: coverage(target_rows, key) for key in target_fields}
+        if target_rows is not None
+        else {}
+    )
+    target_gaps = (
+        {key: max_gap(target_rows, key) for key in target_fields}
+        if target_rows is not None
+        else {}
+    )
     failures: list[str] = []
     if not monotonic or duplicates:
         failures.append("FAIL-TIME")
     if not prefix_invariant:
         failures.append("FAIL-LEAK")
-    if any(value < minimum_coverage for value in coverages.values()):
+    if not prefix_features_available:
         failures.append("HOLD-DATA")
-    if any(value > maximum_gap for value in gaps.values()):
+    if (
+        (
+            any(value < minimum_coverage for value in coverages.values())
+            or any(value < minimum_coverage for value in target_coverages.values())
+        )
+        and "HOLD-DATA" not in failures
+    ):
+        failures.append("HOLD-DATA")
+    if any(value > maximum_gap for value in (*gaps.values(), *target_gaps.values())):
         failures.append("HOLD-GAP")
     for status in ("FAIL-TIME", "FAIL-LEAK", "HOLD-DATA", "HOLD-GAP"):
         if status in failures:
-            return status, coverages, gaps, failures
-    return "SCORABLE", coverages, gaps, failures
+            return (
+                status,
+                coverages,
+                gaps,
+                target_coverages,
+                target_gaps,
+                failures,
+            )
+    return (
+        "SCORABLE",
+        coverages,
+        gaps,
+        target_coverages,
+        target_gaps,
+        failures,
+    )
 
 
 def fit_loocv(items: list[dict[str, Any]], key: str) -> list[float]:
@@ -418,16 +596,19 @@ def decision_for(
         for item in summaries
         if item["quality_status"] != "SCORABLE"
         or item.get("SYM_H_min") is None
+        or any(item.get(key) is None for key in SCORING_FIELDS)
     ]
+    data_blocked = bool(non_scorable)
     if non_scorable:
         blockers.append("non-scorable registered events: " + ", ".join(non_scorable))
-        return "HOLD-DATA", blockers
     minimum = int(policy["minimum_independent_events"])
     if len(summaries) < minimum:
         blockers.append(f"sample {len(summaries)} is below preregistered minimum {minimum}")
     missing_baselines = sorted(set(policy["required_baselines"]) - IMPLEMENTED_BASELINES)
     if missing_baselines:
         blockers.append("required control baselines not implemented: " + ", ".join(missing_baselines))
+    if data_blocked:
+        return "HOLD-DATA", blockers
     if blockers:
         return "HOLD-SAMPLE", blockers
     return "HOLD-SAMPLE", ["PASS evaluation is not implemented without every acceptance gate"]
@@ -544,11 +725,20 @@ def main() -> None:
         rows = minute_grid(parsed, event.start, event.end)
         features_all = feature_vector(rows, event.cutoff)
         prefix_only = [row for row in rows if row.t < event.cutoff]
+        target_only = [row for row in rows if row.t >= event.cutoff]
         features_prefix = feature_vector(prefix_only, event.cutoff)
         prefix_invariant = features_all == features_prefix
         target = target_after_cutoff(rows, event.cutoff)
-        status, coverages, gaps, failures = quality_result(
-            rows,
+        (
+            status,
+            coverages,
+            gaps,
+            target_coverages,
+            target_gaps,
+            failures,
+        ) = quality_result(
+            prefix_only,
+            target_rows=target_only,
             required_fields=policy["required_coverage_fields"],
             gap_fields=policy["gap_fields"],
             minimum_coverage=float(policy["minimum_coverage"]),
@@ -556,6 +746,7 @@ def main() -> None:
             monotonic=monotonic,
             duplicates=duplicates,
             prefix_invariant=prefix_invariant,
+            prefix_features_available=features_all is not None,
         )
         summary: dict[str, Any] = {
             "event_id": event.event_id,
@@ -570,7 +761,11 @@ def main() -> None:
             "duplicate_timestamps": duplicates,
             "malformed_source_rows": malformed,
             "coverage": coverages,
+            "coverage_scope": "FEATURE_PREFIX",
             "max_gap_min": gaps,
+            "target_coverage": target_coverages,
+            "target_max_gap_min": target_gaps,
+            "target_scope": "TARGET_ONLY",
             "prefix_invariant": prefix_invariant,
             "quality_failures": failures,
             "quality_status": status,
@@ -593,6 +788,7 @@ def main() -> None:
         for item in summaries
         if item["quality_status"] == "SCORABLE"
         and item.get("SYM_H_min") is not None
+        and all(item.get(key) is not None for key in SCORING_FIELDS)
     ]
     decision, blockers = decision_for(summaries, policy)
     metrics: dict[str, Any] = {
