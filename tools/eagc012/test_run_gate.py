@@ -425,6 +425,33 @@ class GateTests(unittest.TestCase):
             )
         )
 
+    def test_validation_targets_cannot_change_fitted_models(self) -> None:
+        summaries = []
+        for cohort in ("development", "validation"):
+            for index in range(1, 21):
+                summaries.append(
+                    {
+                        "event_id": f"{cohort[0]}{index:02d}",
+                        "cohort": cohort,
+                        "quality_status": "SCORABLE",
+                        "SYM_H_min": -float(20 + index),
+                        "I_Q": float(index),
+                        "V_Bs": float(index),
+                        "Newell": float(index),
+                        "Burton_OBrien_McPherron": float(index),
+                        "south_hours": float(index),
+                        "SYM_H_prefix_min": float(index),
+                        "SYM_H_recent": float(index),
+                        "pressure_peak": float(index),
+                    }
+                )
+        _, _, first = evaluate_gate(summaries, self.policy)
+        for item in summaries:
+            if item["cohort"] == "validation":
+                item["SYM_H_min"] = float(item["SYM_H_min"]) * 10
+        _, _, second = evaluate_gate(summaries, self.policy)
+        self.assertEqual(first["fitted_models"], second["fitted_models"])
+
     def test_suffix_cannot_change_feature_vector(self) -> None:
         cutoff = datetime(2026, 1, 1, 0, 30, tzinfo=timezone.utc)
         prefix = [row(minute) for minute in range(30)]
