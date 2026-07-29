@@ -62,3 +62,21 @@ python tools/eagc012/run_gate.py
 The runner writes event-level predictions, fitted model parameters,
 acceptance comparisons, provenance, and source hashes to
 `artifacts/eagc012`.
+
+## Retrospective claim hierarchy
+
+`SCIENTIFIC_ADJUDICATION.md` records a later threshold-sensitivity analysis
+that does not alter any frozen decision or prediction. It makes Newell the
+primary comparator and separates superiority, practical noninferiority, and
+out-of-domain transport.
+
+Under that explicitly retrospective policy, the frozen v0.5 ICME result is
+`PASS-NONINFERIOR`: the +4.15% point improvement does not establish
+superiority, but its 0.920 bootstrap probability of remaining within the
+legacy 5% margin and its -0.71% worst single-event omission pass the
+noninferiority rule. The v0.6 SIR result remains `TRANSPORT-REJECT`.
+
+This interpretation is not presented as a new preregistered confirmation.
+The machine-readable policy is `claim_policy.json`, and `adjudicate.py`
+applies it directly to an immutable `gate_metrics.json` artifact without
+refitting the model.

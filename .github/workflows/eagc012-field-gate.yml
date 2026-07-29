@@ -34,6 +34,18 @@ jobs:
         run: python tools/eagc012/run_gate.py
         env:
           EAGC_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Adjudicate scientific claim
+        run: >-
+          python tools/eagc012/adjudicate.py
+          artifacts/eagc012/gate_metrics.json
+          --scope transport
+          --output artifacts/eagc012/claim_adjudication.json
+      - name: Adjudicate frozen ICME claim
+        run: >-
+          python tools/eagc012/adjudicate.py
+          tools/eagc012/frozen/v0.5-validation-predictions.json
+          --scope in-domain
+          --output artifacts/eagc012/v0.5-claim-adjudication.json
       - name: Upload results
         uses: actions/upload-artifact@v4
         with:

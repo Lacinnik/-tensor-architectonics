@@ -1,0 +1,188 @@
+{
+  "protocol_version": "0.5.0-final-independent-replication",
+  "frozen_commit": "2d675f4",
+  "source_gate_metrics_sha256": "1f65e664d7eb96ca6f28cbe552d4f902e8e52c0543ec6b74fcbc0cbdac5c9460",
+  "decision": "REJECT",
+  "validation_predictions": [
+    {
+      "event_id": "V2022-0718-2119",
+      "observed_SYM_H_min": -65.0,
+      "V_Bs_prediction": -68.62700024648461,
+      "I_Q_prediction": -69.76097860107498,
+      "Newell_prediction": -63.49872424714246,
+      "Burton_OBrien_McPherron_prediction": -68.29905297370367,
+      "EAGC_prediction": -71.07141076764115
+    },
+    {
+      "event_id": "V2022-1021-1000",
+      "observed_SYM_H_min": -85.0,
+      "V_Bs_prediction": -24.15892809107197,
+      "I_Q_prediction": -20.212532735862624,
+      "Newell_prediction": -26.81284058562244,
+      "Burton_OBrien_McPherron_prediction": -36.93779170118565,
+      "EAGC_prediction": -34.12181198264937
+    },
+    {
+      "event_id": "V2023-0103-2100",
+      "observed_SYM_H_min": -74.0,
+      "V_Bs_prediction": -76.20113717875834,
+      "I_Q_prediction": -71.7876807173589,
+      "Newell_prediction": -77.34265802820408,
+      "Burton_OBrien_McPherron_prediction": -73.51689225542061,
+      "EAGC_prediction": -59.92101878301159
+    },
+    {
+      "event_id": "V2023-0315-0427",
+      "observed_SYM_H_min": -60.0,
+      "V_Bs_prediction": -54.238234788542044,
+      "I_Q_prediction": -61.97751572475197,
+      "Newell_prediction": -57.31450637673649,
+      "Burton_OBrien_McPherron_prediction": -59.721925872268464,
+      "EAGC_prediction": -65.43295012837693
+    },
+    {
+      "event_id": "V2023-0323-0500",
+      "observed_SYM_H_min": -170.0,
+      "V_Bs_prediction": -71.82973826139873,
+      "I_Q_prediction": -77.6057197657449,
+      "Newell_prediction": -74.76982821975275,
+      "Burton_OBrien_McPherron_prediction": -68.86987395701314,
+      "EAGC_prediction": -77.05954705374974
+    },
+    {
+      "event_id": "V2023-0423-1738",
+      "observed_SYM_H_min": -218.0,
+      "V_Bs_prediction": -92.69375580267456,
+      "I_Q_prediction": -96.97523353839284,
+      "Newell_prediction": -104.64211635687138,
+      "Burton_OBrien_McPherron_prediction": -90.37068989285115,
+      "EAGC_prediction": -90.66197117251932
+    },
+    {
+      "event_id": "V2023-0707-1200",
+      "observed_SYM_H_min": -38.0,
+      "V_Bs_prediction": -72.13344396084253,
+      "I_Q_prediction": -70.80030817353372,
+      "Newell_prediction": -72.21413387343847,
+      "Burton_OBrien_McPherron_prediction": -69.1343018019628,
+      "EAGC_prediction": -50.88767050887428
+    },
+    {
+      "event_id": "V2023-0924-2043",
+      "observed_SYM_H_min": -45.0,
+      "V_Bs_prediction": -71.57092126669247,
+      "I_Q_prediction": -81.61918031613004,
+      "Newell_prediction": -66.81644768770173,
+      "Burton_OBrien_McPherron_prediction": -65.69899496469351,
+      "EAGC_prediction": -92.65073019153614
+    },
+    {
+      "event_id": "V2023-1005-2225",
+      "observed_SYM_H_min": -25.0,
+      "V_Bs_prediction": -51.42985588495654,
+      "I_Q_prediction": -51.07021293028831,
+      "Newell_prediction": -38.38347710322978,
+      "Burton_OBrien_McPherron_prediction": -56.15478211588388,
+      "EAGC_prediction": -44.92715982080397
+    },
+    {
+      "event_id": "V2023-1201-0926",
+      "observed_SYM_H_min": -115.0,
+      "V_Bs_prediction": -77.11684530900195,
+      "I_Q_prediction": -88.0468283144796,
+      "Newell_prediction": -80.21250080004916,
+      "Burton_OBrien_McPherron_prediction": -74.30228685244704,
+      "EAGC_prediction": -106.7037669280446
+    },
+    {
+      "event_id": "V2024-0321-0250",
+      "observed_SYM_H_min": -81.0,
+      "V_Bs_prediction": -65.72961767954548,
+      "I_Q_prediction": -67.62610348625213,
+      "Newell_prediction": -57.45421970561031,
+      "Burton_OBrien_McPherron_prediction": -62.53616370662105,
+      "EAGC_prediction": -61.513544058604865
+    },
+    {
+      "event_id": "V2024-0324-1434",
+      "observed_SYM_H_min": -82.0,
+      "V_Bs_prediction": -70.67950624278306,
+      "I_Q_prediction": -82.0938684802754,
+      "Newell_prediction": -76.09285854627984,
+      "Burton_OBrien_McPherron_prediction": -77.20390229052924,
+      "EAGC_prediction": -81.21151692570474
+    },
+    {
+      "event_id": "V2024-0723-2023",
+      "observed_SYM_H_min": -6.0,
+      "V_Bs_prediction": -1.1919827281137891,
+      "I_Q_prediction": -0.0,
+      "Newell_prediction": -25.344477087479532,
+      "Burton_OBrien_McPherron_prediction": -10.433689280003428,
+      "EAGC_prediction": -31.44142651591706
+    },
+    {
+      "event_id": "V2024-0730-0003",
+      "observed_SYM_H_min": -42.0,
+      "V_Bs_prediction": -68.23719473584023,
+      "I_Q_prediction": -75.7100268236122,
+      "Newell_prediction": -71.73102950516056,
+      "Burton_OBrien_McPherron_prediction": -61.0577072824996,
+      "EAGC_prediction": -106.26790051297772
+    },
+    {
+      "event_id": "V2024-0810-1250",
+      "observed_SYM_H_min": -216.0,
+      "V_Bs_prediction": -40.40562917553399,
+      "I_Q_prediction": -37.78601375874089,
+      "Newell_prediction": -42.599705887787394,
+      "Burton_OBrien_McPherron_prediction": -35.58274926605094,
+      "EAGC_prediction": -30.67853711345424
+    },
+    {
+      "event_id": "V2024-0827-0841",
+      "observed_SYM_H_min": -95.0,
+      "V_Bs_prediction": -56.2657979032265,
+      "I_Q_prediction": -59.53515417515921,
+      "Newell_prediction": -50.04182010176686,
+      "Burton_OBrien_McPherron_prediction": -10.714270408683083,
+      "EAGC_prediction": -75.23951430561583
+    },
+    {
+      "event_id": "V2024-0902-1800",
+      "observed_SYM_H_min": -15.0,
+      "V_Bs_prediction": -39.09597306668077,
+      "I_Q_prediction": -35.11789162951902,
+      "Newell_prediction": -36.19283055589577,
+      "Burton_OBrien_McPherron_prediction": -55.266746955870666,
+      "EAGC_prediction": -28.471367807858222
+    },
+    {
+      "event_id": "V2024-1006-0739",
+      "observed_SYM_H_min": -85.0,
+      "V_Bs_prediction": -50.330530471621316,
+      "I_Q_prediction": -53.436937876640926,
+      "Newell_prediction": -47.01062880517998,
+      "Burton_OBrien_McPherron_prediction": -10.433689280003428,
+      "EAGC_prediction": -51.15606416511547
+    },
+    {
+      "event_id": "V2024-1010-1514",
+      "observed_SYM_H_min": -287.0,
+      "V_Bs_prediction": -99.3569904585532,
+      "I_Q_prediction": -108.45204041277796,
+      "Newell_prediction": -118.30929432593433,
+      "Burton_OBrien_McPherron_prediction": -94.01117260519064,
+      "EAGC_prediction": -154.8816637629197
+    },
+    {
+      "event_id": "V2024-1231-1621",
+      "observed_SYM_H_min": -239.0,
+      "V_Bs_prediction": -68.9257559561724,
+      "I_Q_prediction": -74.95672537392312,
+      "Newell_prediction": -75.71349624118062,
+      "Burton_OBrien_McPherron_prediction": -61.113844026202926,
+      "EAGC_prediction": -96.43114308478492
+    }
+  ]
+}
