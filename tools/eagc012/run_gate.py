@@ -670,6 +670,7 @@ def feature_vector(
     pi_e = 1 - (1 - 0.25 * math.sqrt(quiet * plasma)) * (
         1 - 0.35 * math.sqrt(memory * conductance)
     ) * (1 - 0.60 * tail)
+    newell = newell_coupling(prefix)
     return {
         "feature_rows": len(prefix),
         "valid_feature_rows": len(valid),
@@ -685,7 +686,8 @@ def feature_vector(
         "pressure_recent": statistics.median(recent_pressure),
         "I_Q": iq,
         "V_Bs": vb,
-        "Newell": newell_coupling(prefix),
+        "Newell": newell,
+        "log_Newell": math.log1p(newell) if newell is not None else None,
         "Burton_OBrien_McPherron": burton_obrien_mcpherron(
             prefix, maximum_gap
         ),
@@ -1479,6 +1481,7 @@ def main() -> None:
             "I_Q",
             "V_Bs",
             "Newell",
+            "log_Newell",
             "Burton_OBrien_McPherron",
             "Lambda",
             "Pi",
