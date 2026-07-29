@@ -1,12 +1,12 @@
 {
   "protocol_id": "TZAR-RESEARCH-EAGC-012",
-  "protocol_version": "0.3.0-independent-holdout",
-  "sensor_version": "QE-EAGC-SENSORS-001/0.3.0",
+  "protocol_version": "0.4.0-sequential-replication",
+  "sensor_version": "QE-EAGC-SENSORS-001/0.4.0",
   "dataset_id": "OMNI_HRO_1MIN",
   "source_base": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min",
   "window_semantics": "half-open [start,end)",
   "forecast_cutoff_rule": {
-    "id": "catalog-disturbance-plus-12h-v3",
+    "id": "catalog-disturbance-plus-12h-v4",
     "prefix_minutes": 720,
     "basis_commit": "4ad87a8e47267a95c6b0dd8429508804437886f6"
   },
@@ -15,13 +15,24 @@
     "reference": "https://doi.org/10.7910/DVN/C2MHTH",
     "retrieved_date": "2026-07-28",
     "source_sha256": "7cf9d9ddb2a5104401a0b0e12b889f8354a0ed45899d2e3737f4d581cbaefb7b",
-    "selection_rule": "Starting strictly after the prior pilot window ended at 2003-08-19T16:00:00Z, consider Richardson-Cane near-Earth ICMEs chronologically. Use catalog disturbance time as start, start plus 12 hours as cutoff, and catalog ICME plasma/field end as exclusive end; require at least 12 target hours after cutoff; greedily exclude overlapping windows before data checks; apply the frozen predictor and target availability gates without inspecting target values or model scores; take the first 40 eligible events, assigning the first 20 to development and the next 20 to one-time validation."
+    "selection_rule": "The 40 events through 2019-05-15 form development after the recorded v0.3 validation failure. For v0.4 validation, start strictly after 2019-05-15T16:00:00Z and consider Richardson-Cane near-Earth ICMEs chronologically. Use catalog disturbance time as start, start plus 12 hours as cutoff, and catalog ICME plasma/field end as exclusive end; require at least 12 target hours after cutoff; greedily exclude overlapping windows before data checks; require at least 75% prefix availability and no gap over 15 minutes for the five fields consumed by the frozen model or controls, plus at least 90% target SYM-H availability and no target gap over 15 minutes; do not inspect target values or model scores; take the first 20 eligible events."
   },
   "prior_pilot": {
     "catalog": "https://cdaw.gsfc.nasa.gov/CME_list/dst100/",
     "n_events": 20,
     "decision": "REJECT",
     "purpose": "Protocol and model development only; excluded from confirmatory scoring."
+  },
+  "prior_validation": {
+    "protocol_version": "0.3.0-independent-holdout",
+    "frozen_commit": "28db14a",
+    "n_development": 20,
+    "n_validation": 20,
+    "decision": "REJECT",
+    "eagc_rmse": 43.157445062286314,
+    "best_control": "Newell",
+    "best_control_rmse": 42.48002415977253,
+    "purpose": "Failed validation retained as development evidence; never reported as PASS."
   },
   "model_references": {
     "Newell": "https://doi.org/10.1029/2006JA012015",
@@ -30,40 +41,33 @@
   "eagc_model": {
     "kind": "standardized_ridge",
     "features": [
-      "south_hours",
-      "SYM_H_prefix_min",
-      "SYM_H_recent",
-      "pressure_peak"
+      "pressure_peak",
+      "pressure_recent",
+      "south_hours"
     ],
-    "alpha": 0.1,
-    "selection_scope": "development cohort only",
-    "development_leave_one_event_out_rmse": 27.28199522766642
+    "alpha": 3.0,
+    "selection_scope": "40-event development cohort only after the recorded v0.3 REJECT",
+    "development_leave_one_event_out_rmse": 30.811562374332127,
+    "development_blocked_five_fold_rmse": 32.07199908399141
   },
   "required_coverage_fields": [
-    "bmag",
     "by",
     "bz",
     "speed",
-    "density",
     "pressure",
-    "ae",
-    "al",
     "symh"
   ],
   "gap_fields": [
-    "bmag",
     "by",
     "bz",
     "speed",
-    "density",
     "pressure",
-    "ae",
-    "al",
     "symh"
   ],
-  "minimum_coverage": 0.9,
+  "minimum_coverage": 0.75,
+  "minimum_target_coverage": 0.9,
   "maximum_gap_minutes": 15,
-  "minimum_development_events": 20,
+  "minimum_development_events": 40,
   "minimum_independent_events": 20,
   "minimum_rmse_improvement": 0.05,
   "minimum_bootstrap_probability": 0.9,
@@ -275,9 +279,7 @@
       "end": "2008-12-17T14:00:00Z",
       "catalog_icme_start": "2008-12-17T03:00:00Z",
       "catalog_trigger_qualifier": null
-    }
-  ],
-  "validation_events": [
+    },
     {
       "event_id": "V2009-0603-1600",
       "sheet_tab": "V2009_0603_1600",
@@ -476,6 +478,208 @@
       "cutoff": "2019-05-14T11:26:00Z",
       "end": "2019-05-15T16:00:00Z",
       "catalog_icme_start": "2019-05-14T06:00:00Z",
+      "catalog_trigger_qualifier": null
+    }
+  ],
+  "validation_events": [
+    {
+      "event_id": "V2019-0516-2100",
+      "sheet_tab": "V2019_0516_2100",
+      "months": ["201905"],
+      "start": "2019-05-16T21:00:00Z",
+      "cutoff": "2019-05-17T09:00:00Z",
+      "end": "2019-05-18T08:00:00Z",
+      "catalog_icme_start": "2019-05-16T23:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2019-0526-2214",
+      "sheet_tab": "V2019_0526_2214",
+      "months": ["201905"],
+      "start": "2019-05-26T22:14:00Z",
+      "cutoff": "2019-05-27T10:14:00Z",
+      "end": "2019-05-28T00:00:00Z",
+      "catalog_icme_start": "2019-05-27T04:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2019-1029-2000",
+      "sheet_tab": "V2019_1029_2000",
+      "months": ["201910"],
+      "start": "2019-10-29T20:00:00Z",
+      "cutoff": "2019-10-30T08:00:00Z",
+      "end": "2019-10-30T21:00:00Z",
+      "catalog_icme_start": "2019-10-29T20:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2019-1111-0600",
+      "sheet_tab": "V2019_1111_0600",
+      "months": ["201911"],
+      "start": "2019-11-11T06:00:00Z",
+      "cutoff": "2019-11-11T18:00:00Z",
+      "end": "2019-11-12T12:00:00Z",
+      "catalog_icme_start": "2019-11-11T10:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2020-0420-0231",
+      "sheet_tab": "V2020_0420_0231",
+      "months": ["202004"],
+      "start": "2020-04-20T02:31:00Z",
+      "cutoff": "2020-04-20T14:31:00Z",
+      "end": "2020-04-21T04:00:00Z",
+      "catalog_icme_start": "2020-04-20T09:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2020-1210-0210",
+      "sheet_tab": "V2020_1210_0210",
+      "months": ["202012"],
+      "start": "2020-12-10T02:10:00Z",
+      "cutoff": "2020-12-10T14:10:00Z",
+      "end": "2020-12-13T04:00:00Z",
+      "catalog_icme_start": "2020-12-10T23:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2021-0223-0200",
+      "sheet_tab": "V2021_0223_0200",
+      "months": ["202102"],
+      "start": "2021-02-23T02:00:00Z",
+      "cutoff": "2021-02-23T14:00:00Z",
+      "end": "2021-02-24T15:00:00Z",
+      "catalog_icme_start": "2021-02-23T08:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2021-0512-0637",
+      "sheet_tab": "V2021_0512_0637",
+      "months": ["202105"],
+      "start": "2021-05-12T06:37:00Z",
+      "cutoff": "2021-05-12T18:37:00Z",
+      "end": "2021-05-14T20:00:00Z",
+      "catalog_icme_start": "2021-05-12T15:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2021-0526-1244",
+      "sheet_tab": "V2021_0526_1244",
+      "months": ["202105"],
+      "start": "2021-05-26T12:44:00Z",
+      "cutoff": "2021-05-27T00:44:00Z",
+      "end": "2021-05-29T05:00:00Z",
+      "catalog_icme_start": "2021-05-26T22:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2021-0827-0114",
+      "sheet_tab": "V2021_0827_0114",
+      "months": ["202108"],
+      "start": "2021-08-27T01:14:00Z",
+      "cutoff": "2021-08-27T13:14:00Z",
+      "end": "2021-08-28T15:00:00Z",
+      "catalog_icme_start": "2021-08-27T12:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2021-1001-1000",
+      "sheet_tab": "V2021_1001_1000",
+      "months": ["202110"],
+      "start": "2021-10-01T10:00:00Z",
+      "cutoff": "2021-10-01T22:00:00Z",
+      "end": "2021-10-02T13:00:00Z",
+      "catalog_icme_start": "2021-10-01T11:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2021-1103-1942",
+      "sheet_tab": "V2021_1103_1942",
+      "months": ["202111"],
+      "start": "2021-11-03T19:42:00Z",
+      "cutoff": "2021-11-04T07:42:00Z",
+      "end": "2021-11-05T05:00:00Z",
+      "catalog_icme_start": "2021-11-04T07:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2022-0118-2340",
+      "sheet_tab": "V2022_0118_2340",
+      "months": ["202201"],
+      "start": "2022-01-18T23:40:00Z",
+      "cutoff": "2022-01-19T11:40:00Z",
+      "end": "2022-01-20T01:00:00Z",
+      "catalog_icme_start": "2022-01-19T05:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2022-0201-2220",
+      "sheet_tab": "V2022_0201_2220",
+      "months": ["202202"],
+      "start": "2022-02-01T22:20:00Z",
+      "cutoff": "2022-02-02T10:20:00Z",
+      "end": "2022-02-03T11:00:00Z",
+      "catalog_icme_start": "2022-02-02T16:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2022-0209-2100",
+      "sheet_tab": "V2022_0209_2100",
+      "months": ["202202"],
+      "start": "2022-02-09T21:00:00Z",
+      "cutoff": "2022-02-10T09:00:00Z",
+      "end": "2022-02-11T18:00:00Z",
+      "catalog_icme_start": "2022-02-10T13:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2022-0313-1047",
+      "sheet_tab": "V2022_0313_1047",
+      "months": ["202203"],
+      "start": "2022-03-13T10:47:00Z",
+      "cutoff": "2022-03-13T22:47:00Z",
+      "end": "2022-03-15T19:00:00Z",
+      "catalog_icme_start": "2022-03-13T21:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2022-0331-0224",
+      "sheet_tab": "V2022_0331_0224",
+      "months": ["202203", "202204"],
+      "start": "2022-03-31T02:24:00Z",
+      "cutoff": "2022-03-31T14:24:00Z",
+      "end": "2022-04-01T12:00:00Z",
+      "catalog_icme_start": "2022-03-31T12:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2022-0406-2318",
+      "sheet_tab": "V2022_0406_2318",
+      "months": ["202204"],
+      "start": "2022-04-06T23:18:00Z",
+      "cutoff": "2022-04-07T11:18:00Z",
+      "end": "2022-04-08T22:00:00Z",
+      "catalog_icme_start": "2022-04-07T13:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2022-0412-1122",
+      "sheet_tab": "V2022_0412_1122",
+      "months": ["202204"],
+      "start": "2022-04-12T11:22:00Z",
+      "cutoff": "2022-04-12T23:22:00Z",
+      "end": "2022-04-13T22:00:00Z",
+      "catalog_icme_start": "2022-04-13T02:00:00Z",
+      "catalog_trigger_qualifier": null
+    },
+    {
+      "event_id": "V2022-0709-1200",
+      "sheet_tab": "V2022_0709_1200",
+      "months": ["202207"],
+      "start": "2022-07-09T12:00:00Z",
+      "cutoff": "2022-07-10T00:00:00Z",
+      "end": "2022-07-10T12:00:00Z",
+      "catalog_icme_start": "2022-07-09T14:00:00Z",
       "catalog_trigger_qualifier": null
     }
   ]

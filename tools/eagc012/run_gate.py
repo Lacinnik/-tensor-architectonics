@@ -110,6 +110,7 @@ def load_policy(path: Path = POLICY_PATH) -> dict[str, Any]:
         "required_coverage_fields",
         "gap_fields",
         "minimum_coverage",
+        "minimum_target_coverage",
         "maximum_gap_minutes",
         "minimum_independent_events",
         "minimum_development_events",
@@ -134,6 +135,13 @@ def load_policy(path: Path = POLICY_PATH) -> dict[str, Any]:
         or not 0 < minimum_coverage <= 1
     ):
         raise ValueError("minimum_coverage must be in (0, 1]")
+    minimum_target_coverage = policy["minimum_target_coverage"]
+    if (
+        isinstance(minimum_target_coverage, bool)
+        or not isinstance(minimum_target_coverage, (int, float))
+        or not 0 < minimum_target_coverage <= 1
+    ):
+        raise ValueError("minimum_target_coverage must be in (0, 1]")
     maximum_gap = policy["maximum_gap_minutes"]
     if (
         isinstance(maximum_gap, bool)
@@ -636,6 +644,9 @@ def feature_vector(
     recent_symh = [
         row.symh for row in prefix[-60:] if row.symh is not None
     ]
+    recent_pressure = [
+        row.pressure for row in prefix[-180:] if row.pressure is not None
+    ]
     ae = [row.ae for row in prefix if row.ae is not None]
     al = [row.al for row in prefix if row.al is not None]
     density = [row.density for row in prefix if row.density is not None]
@@ -671,6 +682,7 @@ def feature_vector(
         "pressure_peak": max(
             row.pressure for row in prefix if row.pressure is not None
         ),
+        "pressure_recent": statistics.median(recent_pressure),
         "I_Q": iq,
         "V_Bs": vb,
         "Newell": newell_coupling(prefix),
@@ -697,6 +709,7 @@ def quality_result(
     gap_fields: list[str],
     minimum_coverage: float,
     maximum_gap: int,
+    target_minimum_coverage: float | None = None,
     monotonic: bool,
     duplicates: int,
     prefix_invariant: bool,
@@ -728,10 +741,18 @@ def quality_result(
         failures.append("FAIL-LEAK")
     if not prefix_features_available:
         failures.append("HOLD-DATA")
+    target_threshold = (
+        minimum_coverage
+        if target_minimum_coverage is None
+        else target_minimum_coverage
+    )
     if (
         (
             any(value < minimum_coverage for value in coverages.values())
-            or any(value < minimum_coverage for value in target_coverages.values())
+            or any(
+                value < target_threshold
+                for value in target_coverages.values()
+            )
         )
         and "HOLD-DATA" not in failures
     ):
@@ -1320,6 +1341,9 @@ def main() -> None:
             gap_fields=policy["gap_fields"],
             minimum_coverage=float(policy["minimum_coverage"]),
             maximum_gap=int(policy["maximum_gap_minutes"]),
+            target_minimum_coverage=float(
+                policy["minimum_target_coverage"]
+            ),
             monotonic=monotonic,
             duplicates=duplicates,
             prefix_invariant=prefix_invariant,
@@ -1451,6 +1475,7 @@ def main() -> None:
             "SYM_H_prefix_min",
             "SYM_H_recent",
             "pressure_peak",
+            "pressure_recent",
             "I_Q",
             "V_Bs",
             "Newell",
