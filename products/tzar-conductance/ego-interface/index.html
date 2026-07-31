@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1017">
+  <meta name="description" content="Локальный цифровой эго-интерфейс Тензорной Архитектоники: от голоса эго к кандидату истинного запроса через шесть движков TZAR-QENGINE.">
+  <title>TZAR · Эго-интерфейс</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="ambient ambient-one" aria-hidden="true"></div>
+  <div class="ambient ambient-two" aria-hidden="true"></div>
+
+  <header class="app-header">
+    <a class="brand" href="#start" aria-label="TZAR Эго-интерфейс — к началу">
+      <span class="brand-mark" aria-hidden="true">⊕</span>
+      <span>
+        <b>TZAR · ЭГО-ИНТЕРФЕЙС</b>
+        <small>TZAR-EGO-INTERFACE-001 · 0.1 CANDIDATE</small>
+      </span>
+    </a>
+    <div class="header-boundary"><span></span> локально · без сервера</div>
+  </header>
+
+  <main id="start">
+    <section class="intro" aria-labelledby="page-title">
+      <p class="eyebrow">ТЕНЗОРНАЯ АРХИТЕКТОНИКА · ЦИФРОВОЙ МОДУЛЬ</p>
+      <h1 id="page-title">Не подавить эго.<br><em>Различить запрос.</em></h1>
+      <p class="intro-copy">Интерфейс удерживает предъявленную формулировку, проводит её через Точку, геометрические режимы и два контура обратной связи, а затем возвращает тебе редактируемый кандидат истинного запроса.</p>
+    </section>
+
+    <nav class="stepper" aria-label="Маршрут эго-интерфейса">
+      <ol>
+        <li><button type="button" data-jump="0" aria-current="step"><span>01</span><b>Голос эго</b></button></li>
+        <li><button type="button" data-jump="1"><span>02</span><b>Точка</b></button></li>
+        <li><button type="button" data-jump="2"><span>03</span><b>Режимы</b></button></li>
+        <li><button type="button" data-jump="3"><span>04</span><b>Синтез</b></button></li>
+        <li><button type="button" data-jump="4"><span>05</span><b>Допуск</b></button></li>
+        <li><button type="button" data-jump="5"><span>06</span><b>Паспорт</b></button></li>
+      </ol>
+    </nav>
+
+    <section class="workspace" aria-label="Рабочее поле эго-интерфейса">
+      <aside class="field-map" aria-labelledby="field-title">
+        <div class="field-heading">
+          <p id="field-kicker">КОНТУР 01 · ПРЕДЪЯВЛЕНИЕ</p>
+          <h2 id="field-title">Голос эго</h2>
+          <p id="field-description">Формулировка принимается без спора и без признания её целым.</p>
+        </div>
+
+        <svg class="axis-map" viewBox="0 0 440 440" role="img" aria-labelledby="axis-map-title axis-map-desc">
+          <title id="axis-map-title">Карта геометрических режимов вокруг ядра</title>
+          <desc id="axis-map-desc">Евклид, Лобачевский, Риман, проективный режим и Супра расположены вокруг центрального ядра. Активный режим меняется по ходу маршрута.</desc>
+          <circle class="orbit orbit-outer" cx="220" cy="220" r="168"></circle>
+          <circle class="orbit orbit-inner" cx="220" cy="220" r="96"></circle>
+          <path class="axis-line" d="M220 52V388M52 220H388"></path>
+          <g class="map-node" data-map-node="Gᴱ" transform="translate(220 52)">
+            <circle r="27"></circle><text y="5">Gᴱ</text>
+          </g>
+          <g class="map-node" data-map-node="Gᴸ" transform="translate(380 168)">
+            <circle r="27"></circle><text y="5">Gᴸ</text>
+          </g>
+          <g class="map-node" data-map-node="Gᴿ" transform="translate(319 356)">
+            <circle r="27"></circle><text y="5">Gᴿ</text>
+          </g>
+          <g class="map-node" data-map-node="Gᴾ" transform="translate(121 356)">
+            <circle r="27"></circle><text y="5">Gᴾ</text>
+          </g>
+          <g class="map-node" data-map-node="Gˢ" transform="translate(60 168)">
+            <circle r="27"></circle><text y="5">Gˢ</text>
+          </g>
+          <g class="core-node" transform="translate(220 220)">
+            <circle class="core-halo" r="66"></circle>
+            <circle class="core-circle" r="47"></circle>
+            <text class="core-symbol" y="-3">⊕</text>
+            <text class="core-label" y="20">ЯДРО</text>
+          </g>
+        </svg>
+
+        <div class="field-signature">
+          <span id="signature-code">O ⊕ I</span>
+          <p id="signature-text">Объект и образ должны оставаться различимыми.</p>
+        </div>
+        <p class="candidate-boundary">Инструмент не диагностирует психику и не вычисляет супру. Авторство решения остаётся у субъекта.</p>
+      </aside>
+
+      <form id="ego-form" class="stage" novalidate>
+        <section class="step-panel is-active" data-step="0" aria-labelledby="step-0-title">
+          <div class="panel-head">
+            <span>01 · ПУСКОВОЕ НАПРЯЖЕНИЕ</span>
+            <h2 id="step-0-title">Дай голосу эго прозвучать полностью</h2>
+            <p>Не исправляй его и не делай из него истину. Сейчас это исходная форма.</p>
+          </div>
+          <label class="field-label" for="egoVoice">
+            <span>Что именно говорит эго?</span>
+            <textarea id="egoVoice" name="egoVoice" rows="6" placeholder="Я хочу… Мне нужно… Они должны… Если этого не будет…" required></textarea>
+          </label>
+          <label class="field-label" for="whyNow">
+            <span>Почему это стало острым именно сейчас?</span>
+            <textarea id="whyNow" name="whyNow" rows="3" placeholder="Событие, кризис, дефицит, повторяющееся напряжение"></textarea>
+          </label>
+          <label class="check-row privacy-check" for="saveDraft">
+            <input type="checkbox" id="saveDraft" name="saveDraft">
+            <span><b>Сохранять черновик на этом устройстве</b><small>Выключено по умолчанию: записи могут быть чувствительными.</small></span>
+          </label>
+          <div class="panel-actions panel-actions-end">
+            <button class="button button-primary" type="button" data-next>К Точке <span>→</span></button>
+          </div>
+        </section>
+
+        <section class="step-panel" data-step="1" aria-labelledby="step-1-title" hidden>
+          <div class="panel-head">
+            <span>02 · QP-01 · POINT ENGINE</span>
+            <h2 id="step-1-title">Различи Объект и Образ</h2>
+            <p>Точка возникает как `O ⊕ I`, но не сводит один компонент к другому.</p>
+          </div>
+          <div class="two-column">
+            <label class="field-label" for="object">
+              <span>O · Что произошло наблюдаемо?</span>
+              <textarea id="object" name="object" rows="5" placeholder="Факт без объяснения намерений других людей" required></textarea>
+            </label>
+            <label class="field-label" for="innerImage">
+              <span>I · Какой образ этого возник внутри?</span>
+              <textarea id="innerImage" name="innerImage" rows="5" placeholder="Моё прочтение, картина, прогноз, страх или обещание" required></textarea>
+            </label>
+          </div>
+          <div class="two-column compact-fields">
+            <label class="field-label" for="position">
+              <span>P · Из какой позиции я смотрю?</span>
+              <input id="position" name="position" type="text" placeholder="Например: автор, партнёр, защищающийся" required>
+            </label>
+            <label class="field-label" for="attention">
+              <span>A · Куда направлено внимание?</span>
+              <input id="attention" name="attention" type="text" placeholder="Что сейчас занимает весь фокус" required>
+            </label>
+          </div>
+          <div class="panel-actions">
+            <button class="button button-ghost" type="button" data-prev>← Назад</button>
+            <button class="button button-primary" type="button" data-next>В маршрут <span>→</span></button>
+          </div>
+        </section>
+
+        <section class="step-panel" data-step="2" aria-labelledby="step-2-title" hidden>
+          <div class="panel-head">
+            <span>03 · QG-01 · ПЯТЬ РЕЖИМОВ РАЗЛИЧЕНИЯ</span>
+            <h2 id="step-2-title">Проведи форму через режимы</h2>
+            <p>Это маршрут внимания, а не тест с правильными ответами.</p>
+          </div>
+
+          <div class="geometry-tabs" role="tablist" aria-label="Геометрические режимы">
+            <button type="button" role="tab" aria-selected="true" data-geometry-tab="0"><span>Gᴱ</span> Евклид</button>
+            <button type="button" role="tab" aria-selected="false" data-geometry-tab="1"><span>Gᴸ</span> Лобачевский</button>
+            <button type="button" role="tab" aria-selected="false" data-geometry-tab="2"><span>Gᴿ</span> Риман</button>
+            <button type="button" role="tab" aria-selected="false" data-geometry-tab="3"><span>Gᴾ</span> Проекция</button>
+            <button type="button" role="tab" aria-selected="false" data-geometry-tab="4"><span>Gˢ</span> Супра</button>
+          </div>
+
+          <div class="geometry-panel is-active" role="tabpanel" data-geometry-panel="0">
+            <div class="geometry-prompt"><b>Где граница, направление и порядок?</b><p>Отдели наблюдаемые элементы от целого рассказа.</p></div>
+            <label class="field-label" for="euclid"><span>Что здесь дано как факт, ресурс, граница или последовательность?</span><textarea id="euclid" name="euclid" rows="6" required></textarea></label>
+          </div>
+          <div class="geometry-panel" role="tabpanel" data-geometry-panel="1" hidden>
+            <div class="geometry-prompt"><b>Какие продолжения действительно различимы?</b><p>Первая цель эго — лишь одна ветвь, а не всё пространство.</p></div>
+            <label class="field-label" for="lobachevsky"><span>Назови минимум две возможные траектории и цену каждой.</span><textarea id="lobachevsky" name="lobachevsky" rows="6" required></textarea></label>
+          </div>
+          <div class="geometry-panel" role="tabpanel" data-geometry-panel="2" hidden>
+            <div class="geometry-prompt"><b>Что возвращается и меняет траекторию?</b><p>Ищи петлю обратной связи, а не повтор той же причины.</p></div>
+            <label class="field-label" for="riemann"><span>Какой отклик уже возвращает поле? Что повторяется иначе?</span><textarea id="riemann" name="riemann" rows="6" required></textarea></label>
+          </div>
+          <div class="geometry-panel" role="tabpanel" data-geometry-panel="3" hidden>
+            <div class="geometry-prompt"><b>Что изменилось: позиция, проекция или конструкт?</b><p>Голос эго видит форму из конкретного места.</p></div>
+            <label class="field-label" for="projective"><span>Кто сейчас говорит во мне и чего не видно из этой позиции?</span><textarea id="projective" name="projective" rows="6" required></textarea></label>
+          </div>
+          <div class="geometry-panel" role="tabpanel" data-geometry-panel="4" hidden>
+            <div class="geometry-prompt"><b>Что должно сохраниться при смене формулировки?</b><p>Супра — не число и не ещё одна точка зрения; здесь предъявляется критерий инварианта.</p></div>
+            <label class="field-label" for="supra"><span>Назови основание, без которого запрос перестанет быть твоим.</span><textarea id="supra" name="supra" rows="6" required></textarea></label>
+          </div>
+
+          <div class="geometry-controls">
+            <button class="button button-ghost" type="button" id="geometry-prev">← Предыдущий режим</button>
+            <span id="geometry-count">1 / 5</span>
+            <button class="button button-secondary" type="button" id="geometry-next">Следующий режим →</button>
+          </div>
+          <div class="panel-actions">
+            <button class="button button-ghost" type="button" data-prev>← К Точке</button>
+            <button class="button button-primary" type="button" data-next>К синтезу <span>→</span></button>
+          </div>
+        </section>
+
+        <section class="step-panel" data-step="3" aria-labelledby="step-3-title" hidden>
+          <div class="panel-head">
+            <span>04 · QR-01 · АФФЕРЕНТНЫЙ СИНТЕЗ</span>
+            <h2 id="step-3-title">Собери внутреннее и внешнее</h2>
+            <p>Матрица задаёт координату напряжения; она не заменяет живой контекст.</p>
+          </div>
+          <div class="two-column compact-fields">
+            <label class="field-label" for="innerLevel">
+              <span>Внутренний уровень</span>
+              <select id="innerLevel" name="innerLevel" required>
+                <option value="">Выбери уровень</option>
+                <option>Тело</option><option>Эмоции</option><option>Мышление</option><option>Творец</option>
+              </select>
+            </label>
+            <label class="field-label" for="outerDomain">
+              <span>Внешний домен</span>
+              <select id="outerDomain" name="outerDomain" required>
+                <option value="">Выбери домен</option>
+                <option>Среда</option><option>Люди</option><option>Структуры</option><option>Формы</option>
+              </select>
+            </label>
+          </div>
+          <label class="field-label" for="coreNeed">
+            <span>Что в ядре действительно требует различения или движения?</span>
+            <textarea id="coreNeed" name="coreNeed" rows="4" placeholder="Не желаемый результат, а внутренняя работа или способность" required></textarea>
+          </label>
+          <label class="field-label" for="nextExperiment">
+            <span>Какой малый ход даст наблюдаемый ответ поля?</span>
+            <textarea id="nextExperiment" name="nextExperiment" rows="4" placeholder="Конкретное действие, срок и признак отклика" required></textarea>
+          </label>
+          <div class="candidate-box">
+            <div class="candidate-head"><span>КАНДИДАТ ИСТИННОГО ЗАПРОСА</span><button type="button" id="generate-candidate">Собрать формулировку</button></div>
+            <label class="sr-only" for="trueRequest">Кандидат истинного запроса</label>
+            <textarea id="trueRequest" name="trueRequest" rows="6" placeholder="Собери формулировку, затем измени её своими словами." required></textarea>
+            <label class="check-row" for="confirmCandidate"><input type="checkbox" id="confirmCandidate" name="confirmCandidate"><span><b>Эта формулировка ближе к тому, что действительно требует различения</b><small>Подтверждение принадлежит тебе, а не алгоритму.</small></span></label>
+          </div>
+          <div class="panel-actions">
+            <button class="button button-ghost" type="button" data-prev>← К режимам</button>
+            <button class="button button-primary" type="button" data-next>К допуску <span>→</span></button>
+          </div>
+        </section>
+
+        <section class="step-panel" data-step="4" aria-labelledby="step-4-title" hidden>
+          <div class="panel-head">
+            <span>05 · QA-01 + QC-01 · ЯВНЫЙ ДОПУСК И ХРОНОС</span>
+            <h2 id="step-4-title">Зафиксируй границы запуска</h2>
+            <p>Осевание не вычисляется скрытно. Допуск строится только из явно предъявленных критериев.</p>
+          </div>
+
+          <div class="axis-criteria">
+            <label class="check-row" for="factVsProjection"><input type="checkbox" id="factVsProjection" name="factVsProjection"><span><b>Я различаю факт и свою проекцию</b></span></label>
+            <label class="check-row" for="nonCoercion"><input type="checkbox" id="nonCoercion" name="nonCoercion"><span><b>Запрос не требует принудить другого человека</b></span></label>
+            <label class="check-row" for="feedbackCanCorrect"><input type="checkbox" id="feedbackCanCorrect" name="feedbackCanCorrect"><span><b>Отклик поля сможет изменить мою формулировку</b></span></label>
+            <label class="check-row" for="subjectAuthorship"><input type="checkbox" id="subjectAuthorship" name="subjectAuthorship"><span><b>Я сохраняю авторство решения и следующего хода</b></span></label>
+          </div>
+
+          <div class="metrics" aria-labelledby="metrics-title">
+            <div class="metrics-head"><div><span>МЕТРИКИ ПРОВОДИМОСТИ</span><h3 id="metrics-title">Не допуск, а слой различения</h3></div><p>0 · 0.25 · 0.5 · 0.75 · 1</p></div>
+            <label class="range-row" for="alpha"><span><b>α</b> соответствие основанию</span><output id="alpha-output" for="alpha">0.50</output><input id="alpha" name="alpha" type="range" min="0" max="1" step="0.25" value="0.5"></label>
+            <label class="range-row" for="iy"><span><b>IЯ</b> интеграция ядра</span><output id="iy-output" for="iy">0.50</output><input id="iy" name="iy" type="range" min="0" max="1" step="0.25" value="0.5"></label>
+            <label class="range-row" for="cm"><span><b>Cm</b> контейнер смыслов</span><output id="cm-output" for="cm">0.50</output><input id="cm" name="cm" type="range" min="0" max="1" step="0.25" value="0.5"></label>
+            <label class="range-row" for="q"><span><b>Q</b> качество отклика</span><output id="q-output" for="q">0.50</output><input id="q" name="q" type="range" min="0" max="1" step="0.25" value="0.5"></label>
+            <label class="range-row" for="t"><span><b>T</b> текучесть перехода</span><output id="t-output" for="t">0.50</output><input id="t" name="t" type="range" min="0" max="1" step="0.25" value="0.5"></label>
+          </div>
+
+          <div class="session-policy">
+            <label class="field-label" for="ttlMinutes"><span>Окно локальной сессии</span><select id="ttlMinutes" name="ttlMinutes"><option value="15">15 минут</option><option value="30" selected>30 минут</option><option value="60">60 минут</option><option value="120">120 минут</option></select></label>
+            <label class="check-row" for="localSessionConfirmed"><input type="checkbox" id="localSessionConfirmed" name="localSessionConfirmed"><span><b>Я сам запускаю эту локальную сессию</b><small>Это явное подтверждение, но не внешняя аутентификация.</small></span></label>
+          </div>
+
+          <div class="panel-actions">
+            <button class="button button-ghost" type="button" data-prev>← К синтезу</button>
+            <button class="button button-primary" type="button" data-next>К паспорту <span>→</span></button>
+          </div>
+        </section>
+
+        <section class="step-panel" data-step="5" aria-labelledby="step-5-title" hidden>
+          <div class="panel-head">
+            <span>06 · QI-01 · ПАСПОРТ ПЕРЕХОДА</span>
+            <h2 id="step-5-title">Исполни контур fail-closed</h2>
+            <p>Порядок: QI/preflight → QA → QC/arm → QP → QR → QG → QI/postflight.</p>
+          </div>
+
+          <div id="run-empty" class="run-empty">
+            <div class="run-symbol">σ</div>
+            <h3>Контур ещё не исполнен</h3>
+            <p>Если свидетельств недостаточно, операция остановится в `review`, `denied` или `suspended` — без фиктивного вывода.</p>
+            <button class="button button-primary button-wide" type="button" id="run-contour">Исполнить шесть движков <span>→</span></button>
+          </div>
+
+          <div id="run-result" class="run-result" hidden aria-live="polite">
+            <div id="result-verdict" class="result-verdict"></div>
+            <div class="true-request-card">
+              <span>КАНДИДАТ ИСТИННОГО ЗАПРОСА</span>
+              <blockquote id="result-candidate"></blockquote>
+              <p id="result-feedback"></p>
+            </div>
+            <div class="engine-trace" aria-labelledby="trace-title">
+              <div class="trace-head"><h3 id="trace-title">След движков</h3><span>REFERENCE CANDIDATE</span></div>
+              <ol id="engine-results"></ol>
+            </div>
+            <details class="passport-details"><summary>Машинный паспорт операции</summary><pre id="passport-json"></pre></details>
+            <div class="result-actions">
+              <button class="button button-primary" type="button" id="rerun-contour">Исполнить снова</button>
+              <button class="button button-secondary" type="button" id="copy-candidate">Скопировать запрос</button>
+              <button class="button button-secondary" type="button" id="export-passport">Экспорт JSON</button>
+              <button class="button button-ghost" type="button" id="finish-cycle">Завершить и освободить сессию</button>
+            </div>
+          </div>
+
+          <div class="runtime-boundary">
+            <b>Граница исполнения</b>
+            <p>Локальный модуль не выполняет внешнюю аутентификацию, авторскую криптографическую подпись, психологическую диагностику или гарантированное физическое уничтожение данных. `DISPERSED` означает логическое освобождение состояния интерфейса и локального черновика.</p>
+          </div>
+          <div class="panel-actions">
+            <button class="button button-ghost" type="button" data-prev>← К допуску</button>
+          </div>
+        </section>
+      </form>
+    </section>
+
+    <footer>
+      <span>© 2026 Александр Лацинник · Тензорная Архитектоника</span>
+      <p>Пять режимов · шесть движков · два контура обратной связи.</p>
+    </footer>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <noscript><p class="noscript">Для работы локального интерфейса необходим JavaScript.</p></noscript>
+  <script src="./qengine.js"></script>
+  <script src="./ego-core.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

@@ -123,4 +123,13 @@ assert.equal((await verifyReportSeal(firstCheck)).valid, true);
 assert.equal(firstCheck.checks.length, 8);
 assert.ok(firstCheck.checks.every((item) => item.result === "PASS"));
 
-console.log("TZAR-PRODUCT-001: 85 assertions passed");
+const platformHtml = await readFile(new URL("./index.html", import.meta.url), "utf8");
+const egoHtml = await readFile(new URL("./ego-interface/index.html", import.meta.url), "utf8");
+const egoManifest = JSON.parse(await readFile(new URL("./ego-interface/manifest.json", import.meta.url), "utf8"));
+assert.match(platformHtml, /data-mode="ego"/);
+assert.match(platformHtml, /\.\/ego-interface\/\?embed=platform/);
+assert.match(platformHtml, /Тексты остаются внутри эго-интерфейса/);
+assert.match(egoHtml, /TZAR · Эго-интерфейс/);
+assert.equal(egoManifest.id, "TZAR-EGO-INTERFACE-001");
+
+console.log("TZAR-PRODUCT-001: 90 assertions passed");
