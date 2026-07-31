@@ -1,0 +1,25 @@
+{
+  "schema": "tzar.digital-module-manifest/0.1.0",
+  "id": "TZAR-EGO-INTERFACE-001",
+  "name": "TZAR Ego Interface",
+  "version": "0.1.0-candidate",
+  "language": "ru",
+  "entrypoint": "index.html",
+  "runtime": "browser-local-offline",
+  "networkRequired": false,
+  "storage": {
+    "default": "memory-only",
+    "optional": "localStorage-after-explicit-opt-in"
+  },
+  "qengines": ["QP-01", "QR-01", "QG-01", "QA-01", "QC-01", "QI-01"],
+  "geometries": ["Gᴱ", "Gᴸ", "Gᴿ", "Gᴾ", "Gˢ"],
+  "status": "candidate-local-reflection",
+  "boundaries": [
+    "not-a-diagnostic-system",
+    "true-request-remains-subject-confirmed-candidate",
+    "local-session-confirmation-is-not-external-authentication",
+    "local-sha256-is-not-author-signature",
+    "metrics-are-recommendational-not-authorizing",
+    "logical-release-is-not-guaranteed-physical-erasure"
+  ]
+}

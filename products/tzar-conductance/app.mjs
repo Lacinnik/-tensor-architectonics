@@ -22,6 +22,10 @@ let publishedAuthorReview=null;
 let activeAuthorKey=null;
 let trustedKeyRegistry={keys:[]};
 const calibrationLabels={preserved:"ПРОВОДИМО",review:"ТРЕБУЕТ РАЗЛИЧЕНИЯ",rupture:"РАЗРЫВ"};
+const platformCopy={
+  conductance:{eyebrow:"Тензорная Архитектоника · проводимость смысла",title:"Близость — ещё не<br><em>тождество смысла.</em>",lead:"Модель строит предварительную оценку, а отдельный аудит показывает точные опоры, логические маркеры и лексические изменения, которые должен различить человек."},
+  ego:{eyebrow:"Тензорная Архитектоника · цифровой модуль",title:"Не подавить эго.<br><em>Различить запрос.</em>",lead:"Интерфейс удерживает исходную формулировку, проводит её через Точку, геометрические режимы и два контура обратной связи, а затем возвращает редактируемый кандидат истинного запроса."},
+};
 
 const semanticExample={
   source:"Цифровой продукт проводит явно заданный инвариант через различные формы представления и обнаруживает его подмену.",
@@ -286,7 +290,38 @@ async function run(payload=payloadFromBuilder()){
   try{setStatus("Проверка…","work");currentReport=await verifyPayload(payload);currentReportKind="structural";render(currentReport);enableExports();input.value=JSON.stringify(payload,null,2);saveDraft();setStatus(currentReport.pass?"Контур проводим":"Контур разорван",currentReport.pass?"pass":"fail")}
   catch(error){currentReport=null;result.innerHTML=`<div class="error"><strong>Невозможно выполнить проверку</strong><p>${escapeHtml(error.message)}</p></div>`;exportJson.disabled=true;exportMarkdown.disabled=true;setStatus("Ошибка входа","fail")}
 }
-function switchMode(mode){document.body.dataset.mode=mode;document.querySelectorAll(".mode").forEach(b=>b.classList.toggle("active",b.dataset.mode===mode));$("#output-title").textContent=mode==="semantic"?"Карта смысловой проводимости":mode==="calibration"?"Карта авторского обзора":mode==="author-key"?"Контур авторской подписи":"Карта структурной проводимости";if(mode==="json")input.value=JSON.stringify(payloadFromBuilder(),null,2);if(mode==="calibration"){exportJson.disabled=true;exportMarkdown.disabled=true;renderCalibrationCase()}if(mode==="author-key"){exportJson.disabled=true;exportMarkdown.disabled=true;renderKeyOutput()}}
+function switchMode(mode){
+  document.body.dataset.mode=mode;
+  document.querySelectorAll(".mode").forEach(b=>b.classList.toggle("active",b.dataset.mode===mode));
+  const copy=mode==="ego"?platformCopy.ego:platformCopy.conductance;
+  $("#hero-eyebrow").textContent=copy.eyebrow;
+  $("#hero-title").innerHTML=copy.title;
+  $("#hero-lead").textContent=copy.lead;
+  $("#output-title").textContent=mode==="semantic"?"Карта смысловой проводимости":mode==="calibration"?"Карта авторского обзора":mode==="author-key"?"Контур авторской подписи":"Карта структурной проводимости";
+  if(mode==="json")input.value=JSON.stringify(payloadFromBuilder(),null,2);
+  if(mode==="calibration"){exportJson.disabled=true;exportMarkdown.disabled=true;renderCalibrationCase()}
+  if(mode==="author-key"){exportJson.disabled=true;exportMarkdown.disabled=true;renderKeyOutput()}
+  const statuses={semantic:"Смысловой контур готов",ego:"Эго-контур готов",calibration:"Калибровочный контур готов","author-key":"Контур авторского ключа готов",builder:"Структурный контур готов",json:"JSON-контур готов"};
+  setStatus(statuses[mode]||"Контур готов","idle");
+  const url=new URL(location.href);
+  if(mode==="ego")url.searchParams.set("mode","ego");else url.searchParams.delete("mode");
+  history.replaceState(null,"",url);
+}
+
+window.addEventListener("message",event=>{
+  const frame=$("#ego-frame");
+  if(!frame||event.source!==frame.contentWindow)return;
+  if(location.origin!=="null"&&event.origin!==location.origin)return;
+  const message=event.data;
+  if(!message||message.type!=="tzar:ego-interface")return;
+  if(message.event==="HEIGHT"&&Number.isFinite(message.height))frame.style.height=`${Math.max(760,Math.min(2800,message.height))}px`;
+  if(document.body.dataset.mode!=="ego")return;
+  if(message.event==="READY")setStatus("Эго-контур готов","idle");
+  if(message.event==="PRESERVED")setStatus("Эго-контур сохранён","pass");
+  if(message.event==="REVIEW")setStatus("Эго-контур требует различения","review");
+  if(message.event==="FAILED")setStatus("Эго-контур остановлен","fail");
+  if(message.event==="DISPERSED")setStatus("Эго-сессия освобождена","idle");
+});
 
 $("#verify").onclick=()=>run();
 $("#analyze-semantic").onclick=()=>cancelSemanticJob?cancelSemanticJob():runSemantic();
@@ -339,9 +374,10 @@ let initial=example;try{const saved=localStorage.getItem("tzar-product-001-draft
 loadBuilder(structuredClone(initial));
 let initialSemantic=semanticExample;try{const saved=localStorage.getItem("tzar-product-001-semantic-draft");if(saved)initialSemantic=JSON.parse(saved)}catch{}
 loadSemantic(initialSemantic);
-switchMode("semantic");
+const requestedMode=new URLSearchParams(location.search).get("mode");
+switchMode(requestedMode==="ego"?"ego":"semantic");
 currentReport=null;exportJson.disabled=true;exportMarkdown.disabled=true;
 result.innerHTML='<div class="empty">Исходная мысль и три преобразования уже загружены. Запустите смысловую проверку.</div>';
-setStatus("Смысловой контур готов","idle");
+if(requestedMode!=="ego")setStatus("Смысловой контур готов","idle");
 loadCalibrationCorpus();
 loadKeyEnvironment();

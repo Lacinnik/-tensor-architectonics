@@ -16,13 +16,14 @@
     </header>
 
     <section class="hero">
-      <p class="eyebrow">Тензорная Архитектоника · проводимость смысла</p>
-      <h1>Близость — ещё не<br><em>тождество смысла.</em></h1>
-      <p class="lead">Модель строит предварительную оценку, а отдельный аудит показывает точные опоры, логические маркеры и лексические изменения, которые должен различить человек.</p>
+      <p class="eyebrow" id="hero-eyebrow">Тензорная Архитектоника · проводимость смысла</p>
+      <h1 id="hero-title">Близость — ещё не<br><em>тождество смысла.</em></h1>
+      <p class="lead" id="hero-lead">Модель строит предварительную оценку, а отдельный аудит показывает точные опоры, логические маркеры и лексические изменения, которые должен различить человек.</p>
     </section>
 
     <nav class="mode-switch" aria-label="Режим продукта">
       <button class="mode active" data-mode="semantic">Смысловой режим <span>β</span></button>
+      <button class="mode" data-mode="ego">Эго-интерфейс <span>0.1</span></button>
       <button class="mode" data-mode="calibration">Калибровочный корпус <span>12</span></button>
       <button class="mode" data-mode="author-key">Авторский ключ <span>β</span></button>
       <button class="mode" data-mode="builder">Структурный контур</button>
@@ -84,6 +85,15 @@
         <textarea id="payload" spellcheck="false"></textarea>
         <button id="verify-json" class="primary"><span>Проверить JSON</span><b>→</b></button>
       </div>
+
+      <section class="ego-platform-panel" aria-labelledby="ego-platform-title">
+        <div class="ego-platform-head">
+          <div><small>TZAR-EGO-INTERFACE-001 · CANDIDATE</small><h2 id="ego-platform-title">Цифровой эго-интерфейс</h2><p>Маршрут от голоса эго через Точку и пять режимов к подтверждаемому кандидату истинного запроса.</p></div>
+          <a href="./ego-interface/" target="_blank" rel="noopener">Открыть отдельно ↗</a>
+        </div>
+        <iframe id="ego-frame" src="./ego-interface/?embed=platform" title="TZAR Ego Interface" loading="lazy"></iframe>
+        <div class="ego-platform-boundary"><b>ЛОКАЛЬНАЯ ГРАНИЦА</b><p>Тексты остаются внутри эго-интерфейса. Платформа получает только технический статус контура и высоту встроенного представления.</p></div>
+      </section>
 
       <div class="panel output-panel">
         <div class="panel-head"><div><small>03 · РАЗЛИЧЕНИЕ</small><h2 id="output-title">Карта смысловой проводимости</h2></div><div class="actions"><button id="verify-passport" class="ghost">Проверить паспорт</button><button id="export-json" class="ghost" disabled>JSON</button><button id="export-markdown" class="ghost" disabled>Markdown</button><input id="passport-file" type="file" accept=".json,application/json" hidden></div></div>

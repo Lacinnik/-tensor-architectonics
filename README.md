@@ -25,6 +25,10 @@
 
 Браузерный проводник конструкта: строит локальную модельную оценку свободных формулировок, выделяет точные опоры, логические и лексические изменения включает слепой авторский обзор калибровочного корпуса и локальный контур криптографической подписи паспортов.
 
+[**TZAR-EGO-INTERFACE-001 — цифровой эго-интерфейс**](products/tzar-conductance/ego-interface/) · версия `0.1.0` · статус `candidate-local-reflection`.
+
+Модуль встроен в [живую платформу TZAR Conductance](https://lacinnik.github.io/-tensor-architectonics/?mode=ego): голос эго проводится через Точку, пять актуальных геометрических режимов, явный осевой допуск и шесть QENGINE к подтверждаемому кандидату истинного запроса.
+
 [**TZAR-CALIBRATION-001 — первичный корпус смысловой проводимости**](products/tzar-conductance/calibration/) · 12 случаев · статус `author-reviewed`.
 
 [**TZAR-AUTHOR-KEY-001 — открытый авторский ключ**](products/tzar-conductance/author-keys/) · статус `trusted` · отпечаток `sha256:Ynjlrfr7-2Ce9ck9RrTZgOo6lXcqwcMpUyl_X0t7G1s`.
