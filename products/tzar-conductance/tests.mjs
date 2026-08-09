@@ -126,10 +126,17 @@ assert.ok(firstCheck.checks.every((item) => item.result === "PASS"));
 const platformHtml = await readFile(new URL("./index.html", import.meta.url), "utf8");
 const egoHtml = await readFile(new URL("./ego-interface/index.html", import.meta.url), "utf8");
 const egoManifest = JSON.parse(await readFile(new URL("./ego-interface/manifest.json", import.meta.url), "utf8"));
+const qengineApp = await readFile(new URL("./qengine/app.mjs", import.meta.url), "utf8");
+const qengineHtml = await readFile(new URL("./qengine/index.html", import.meta.url), "utf8");
 assert.match(platformHtml, /data-mode="ego"/);
 assert.match(platformHtml, /\.\/ego-interface\/\?embed=platform/);
 assert.match(platformHtml, /Тексты остаются внутри эго-интерфейса/);
+assert.match(platformHtml, /ego-interface\/tzar-language\.js/);
+assert.match(qengineHtml, /ego-interface\/tzar-language\.js/);
+assert.match(qengineApp, /compileProduct\("tzar-qengine"/);
+assert.match(qengineApp, /Q=null/);
 assert.match(egoHtml, /TZAR · Эго-интерфейс/);
 assert.equal(egoManifest.id, "TZAR-EGO-INTERFACE-001");
+assert.equal(egoManifest.languageModel.version, "0.2.0-candidate");
 
 console.log("TZAR-PRODUCT-001: 90 assertions passed");

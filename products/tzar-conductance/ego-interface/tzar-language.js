@@ -2,8 +2,13 @@
   "use strict";
 
   const MODEL_ID = "TZAR-LANGUAGE-001";
-  const MODEL_VERSION = "0.1.0-candidate";
+  const MODEL_VERSION = "0.2.0-candidate";
   const CORPUS = "Азбука Сингулярности:49 / Буки Перехода:24 / Передачи:7";
+  const PROFILES = Object.freeze({
+    tzar: Object.freeze({ id: "tzar", voice: "system", targetRelation: "проверить проводимость смысла при сохранении авторского инварианта", context: "TZAR Conductance" }),
+    "tzar-qengine": Object.freeze({ id: "tzar-qengine", voice: "artifact", targetRelation: "вернуть проверяемый результат движка без самосертификации инварианта", context: "TZAR-QENGINE-001" }),
+    "ego-interface": Object.freeze({ id: "ego-interface", voice: "subject", targetRelation: "различить голос эго и подтверждаемый субъектом кандидат истинного запроса", context: "TZAR-EGO-INTERFACE-001" }),
+  });
 
   const AZ = [
     ["A1", "Азъ", "Присутствие × Пустота = Я. Центр и начало сборки формы."],
@@ -181,7 +186,7 @@
     return cleanValue ? cleanValue[0].toLocaleUpperCase("ru") + cleanValue.slice(1) + "." : "";
   }
 
-  function compile(state) {
+  function compile(state, options = {}) {
     const azRank = rank(AZ_ITEMS, [
       [state.coreNeed, 5], [state.supra, 4], [state.projective, 2], [state.position, 1], [state.innerLevel, 1],
     ], "A45");
@@ -201,19 +206,28 @@
     const move = clean(state.nextExperiment, transmission.action);
     const feedback = clean(state.riemann, "наблюдаемый ответ поля");
     const trueRequest = `Как мне ${need}, различая факт «${object}» и мой образ «${image}», сохраняя «${invariant}», и проверить выбранный ход через «${move}»?`;
-    const publicStatement = [
-      `Я различаю наблюдаемое — «${object}» — и возникший во мне образ — «${image}».`,
-      `Моё действительное движение сейчас — ${need}.`,
-      `Я сохраняю основание «${invariant}» и совершаю проверяемый ход: ${move}.`,
-      `Ответом станет не обещание, а наблюдаемый отклик: ${feedback}.`,
-    ].join(" ");
+    const profile = PROFILES[options.profile] || PROFILES["ego-interface"];
+    const voice = options.voice || profile.voice;
+    const subjectTrace = clean(options.subjectTrace || state.subjectTrace || state.egoVoice, "явно предъявленный след субъекта");
+    const targetRelation = clean(options.targetRelation || profile.targetRelation, "проверить следующий ход");
+    const context = clean(options.context || profile.context, "локальный контур ТзАр");
+    const observedQ = state.observedQ ?? null;
+    if (observedQ !== null && observedQ !== 0 && observedQ !== 1) throw new Error("TZAR_LANGUAGE_Q_MUST_BE_OBSERVED_BINARY");
+    const statements = {
+      subject: [`Я различаю наблюдаемое — «${object}» — и возникший во мне образ — «${image}».`, `Моё действительное движение сейчас — ${need}.`, `Я сохраняю основание «${invariant}» и совершаю проверяемый ход: ${move}.`, `Ответом станет не обещание, а наблюдаемый отклик: ${feedback}.`],
+      system: [`Контур различает объект «${object}» и отражённый образ «${image}».`, `Целевая связь — ${targetRelation}.`, `Сохраняемое основание — «${invariant}»; проверяемый ход — ${move}.`, `Наблюдаемый возврат: ${feedback}.`],
+      artifact: [`Исполнение удерживает объект «${object}» отдельно от результата «${image}».`, `Контракт результата: ${targetRelation}.`, `Инвариант «${invariant}» не считается подтверждённым самим вычислением.`, `Следующая проверка: ${move}; возврат: ${feedback}.`],
+    };
+    const publicStatement = (statements[voice] || statements.subject).join(" ");
     const formula = `${az.title} × ${buka.symbol} ${buka.title} → ${transmission.symbol} ${transmission.title}`;
     return {
       modelId: MODEL_ID,
       modelVersion: MODEL_VERSION,
+      profile: profile.id,
       status: "candidate-authorial-symbolic-compiler",
       corpus: CORPUS,
       formula,
+      tensor: { O: object, S: subjectTrace, I: image, R_g: targetRelation, C: context, Q: observedQ, evidence: observedQ === null ? "HOLD-DATA" : "observed" },
       selection: { az, buka, transmission },
       layers: {
         distinction: `O: ${sentence(object)} I: ${sentence(image)}`,
@@ -231,7 +245,8 @@
         selection: "deterministic-corpus-ranking-requires-subject-confirmation",
         diagnosis: "not-performed",
         prediction: "not-performed",
-        observedQ: null,
+        observedQ,
+        subjectConfirmed: options.subjectConfirmed === true,
         display: "human-language-and-symbolic-passport-separated",
       },
     };
@@ -265,10 +280,16 @@
     MODEL_ID,
     MODEL_VERSION,
     CORPUS,
+    PROFILES,
     AZ: AZ_ITEMS,
     BUKI: BUKI_ITEMS,
     TRANSMISSIONS: TX_ITEMS,
     compile,
+    compileProduct(profileId, state, options = {}) {
+      const profile = PROFILES[profileId];
+      if (!profile) throw new Error(`TZAR_LANGUAGE_PROFILE_UNKNOWN:${profileId}`);
+      return compile(state, { ...options, profile: profileId });
+    },
     bindEngines,
   };
 })(globalThis);
