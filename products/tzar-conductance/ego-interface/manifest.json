@@ -14,7 +14,7 @@
   "qengines": ["QP-01", "QR-01", "QG-01", "QA-01", "QC-01", "QI-01"],
   "languageModel": {
     "id": "TZAR-LANGUAGE-001",
-    "version": "0.1.0-candidate",
+    "version": "0.2.0-candidate",
     "type": "deterministic-authorial-symbolic-compiler",
     "corpus": { "az": 49, "buki": 24, "transmissions": 7 },
     "externalModelRequired": false

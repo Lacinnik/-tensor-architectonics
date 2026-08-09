@@ -68,6 +68,8 @@ await test("авторский языковой корпус содержит 49
   assert.equal(Language.BUKI.length, 24);
   assert.equal(Language.TRANSMISSIONS.length, 7);
   assert.equal(Language.MODEL_ID, "TZAR-LANGUAGE-001");
+  assert.equal(Language.MODEL_VERSION, "0.2.0-candidate");
+  assert.deepEqual(Object.keys(Language.PROFILES), ["tzar", "tzar-qengine", "ego-interface"]);
 });
 
 await test("синтез формирует редактируемый вопрос, а не диагноз", () => {
@@ -84,7 +86,18 @@ await test("языковой компилятор разделяет публи�
   assert.match(result.formula, /×/);
   assert.match(result.formula, /→/);
   assert.equal(result.boundary.observedQ, null);
+  assert.equal(result.tensor.Q, null);
+  assert.equal(result.tensor.O, state().object);
+  assert.equal(result.tensor.S, state().egoVoice.replace(/\.$/u, ""));
   assert.equal(result.boundary.diagnosis, "not-performed");
+});
+
+await test("продуктовые голоса разделены, а Q принимается только как наблюдаемый бинарный возврат", () => {
+  const system = Language.compileProduct("tzar", state());
+  const artifact = Language.compileProduct("tzar-qengine", state());
+  assert.match(system.layers.publicStatement, /^Контур различает объект/);
+  assert.match(artifact.layers.publicStatement, /^Исполнение удерживает объект/);
+  assert.throws(() => Language.compile({ ...state(), observedQ: 0.69 }), /TZAR_LANGUAGE_Q_MUST_BE_OBSERVED_BINARY/);
 });
 
 await test("контрольные авторские связки не дрейфуют", () => {

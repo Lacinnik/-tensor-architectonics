@@ -95,7 +95,7 @@
     if (!global.TzarLanguage?.compile) throw new Error("TZAR-LANGUAGE runtime не загружен.");
 
     const state = structuredClone(inputState);
-    const language = global.TzarLanguage.compile(state);
+    const language = global.TzarLanguage.compileProduct("ego-interface", state, { subjectTrace: state.egoVoice, subjectConfirmed: state.confirmCandidate === true });
     state.trueRequest = normalize(state.trueRequest) || language.layers.trueRequest;
     state.metrics = Object.fromEntries(
       ["alpha", "iy", "cm", "q", "t"].map(key => [key, Number(state.metrics?.[key])])
