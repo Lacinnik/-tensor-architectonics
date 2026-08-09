@@ -361,6 +361,15 @@
     verdict.innerHTML = completed
       ? `<span>PRESERVED</span><div><b>Контур завершён с предъявленным инвариантом</b><p>Результат остаётся кандидатом и не заменяет твоего решения.</p></div>`
       : `<span>${suspended ? "REVIEW" : "FAILED"}</span><div><b>Контур остановлен на стадии ${escapeHtml(run.stage || "input")}</b><p>${escapeHtml(run.reason || "Недостаточно свидетельств для продолжения.")}</p></div>`;
+    const language = run.language || run.passport?.result?.language;
+    const selection = language?.selection || {};
+    byId("result-statement").textContent = completed
+      ? language?.layers?.publicStatement || run.candidate
+      : "Публичное высказывание не выпущено: контур не завершён.";
+    byId("result-formula").textContent = completed ? language?.formula || "—" : "—";
+    byId("result-az").textContent = completed && selection.az ? `${selection.az.id} · ${selection.az.title}` : "—";
+    byId("result-buka").textContent = completed && selection.buka ? `${selection.buka.id} · ${selection.buka.symbol} ${selection.buka.title}` : "—";
+    byId("result-tx").textContent = completed && selection.transmission ? `${selection.transmission.id} · ${selection.transmission.symbol} ${selection.transmission.title}` : "—";
     byId("result-candidate").textContent = run.candidate || value("trueRequest") || "Формулировка не собрана.";
     byId("result-feedback").textContent = completed
       ? run.passport.result.feedbackLoop
@@ -403,19 +412,21 @@
   }
 
   async function copyCandidate() {
-    const candidate = lastRun?.candidate || value("trueRequest");
+    const language = lastRun?.language || lastRun?.passport?.result?.language;
+    const candidate = language?.layers?.publicStatement || lastRun?.candidate || value("trueRequest");
     if (!candidate) return;
+    const copyText = language?.formula ? `${candidate}\n\nСингулярная формула: ${language.formula}` : candidate;
     try {
-      await navigator.clipboard.writeText(candidate);
+      await navigator.clipboard.writeText(copyText);
     } catch {
       const helper = document.createElement("textarea");
-      helper.value = candidate;
+      helper.value = copyText;
       document.body.append(helper);
       helper.select();
       document.execCommand("copy");
       helper.remove();
     }
-    showToast("Кандидат истинного запроса скопирован.");
+    showToast("Публичное высказывание и его формула скопированы.");
   }
 
   function finishCycle() {
@@ -430,6 +441,11 @@
     byId("engine-results").innerHTML = `<li><code>${escapeHtml(dispersed.stage)}</code><p>${escapeHtml(dispersed.lifecycleState)} · logical release</p><small>${escapeHtml(dispersed.outcome)}</small></li>`;
     byId("result-verdict").className = "result-verdict";
     byId("result-verdict").innerHTML = `<span>DISPERSED</span><div><b>Логическое освобождение завершено</b><p>Это не гарантия физически необратимого удаления данных устройством.</p></div>`;
+    byId("result-statement").textContent = "Содержимое сессии очищено.";
+    byId("result-formula").textContent = "—";
+    byId("result-az").textContent = "—";
+    byId("result-buka").textContent = "—";
+    byId("result-tx").textContent = "—";
     byId("result-candidate").textContent = "Содержимое сессии очищено.";
     byId("result-feedback").textContent = "Следующий цикл начнётся с новой Точки.";
     byId("passport-json").textContent = JSON.stringify(dispersed, null, 2);
