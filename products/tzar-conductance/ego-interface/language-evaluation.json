@@ -1,0 +1,68 @@
+{
+  "schema": "tzar.language-evaluation/0.1.0",
+  "model": "TZAR-LANGUAGE-001@0.1.0-candidate",
+  "status": "working-author-review-set",
+  "boundary": "These expected selections are regression criteria, not empirical validation.",
+  "cases": [
+    {
+      "id": "structural-negotiation",
+      "input": {
+        "object": "Разговор о сроке проекта",
+        "innerImage": "Если я назову предел, меня сочтут слабым",
+        "position": "Исполнитель",
+        "euclid": "Есть три задачи и один рабочий день",
+        "lobachevsky": "Сократить объём, перенести срок или привлечь второго человека",
+        "riemann": "Ранний разговор возвращает управляемость",
+        "projective": "Требование безошибочности — моя проекция",
+        "supra": "Честность о реальной ёмкости без отказа от ответственности",
+        "innerLevel": "Мышление",
+        "outerDomain": "Структуры",
+        "coreNeed": "согласовать выполнимый приоритет",
+        "nextExperiment": "назвать три задачи и спросить, какая одна обязательна сегодня"
+      },
+      "expected": { "az": "A12", "buka": "B18", "transmission": "TX3" }
+    },
+    {
+      "id": "observable-materialization",
+      "input": {
+        "object": "Есть идея без предъявленного прототипа",
+        "innerImage": "Продукт уже готов",
+        "coreNeed": "создать наблюдаемый прототип продукта",
+        "supra": "честность статуса готовности",
+        "euclid": "Есть макет и один рабочий день",
+        "riemann": "Пользователь сможет открыть экран",
+        "outerDomain": "Формы",
+        "nextExperiment": "собрать один экран и предъявить его сегодня"
+      },
+      "expected": { "az": "A6", "buka": "B11", "transmission": "TX5" }
+    },
+    {
+      "id": "system-integration",
+      "input": {
+        "object": "Результат пилота лежит отдельно",
+        "innerImage": "Он сам изменит работу команды",
+        "coreNeed": "встроить результат в систему",
+        "supra": "не потерять измеренный результат",
+        "euclid": "Есть действующий регламент",
+        "riemann": "Команда применит новое правило",
+        "outerDomain": "Структуры",
+        "nextExperiment": "обновить регламент и указать новое правило системы"
+      },
+      "expected": { "az": "A15", "buka": "B24", "transmission": "TX6" }
+    },
+    {
+      "id": "form-restart",
+      "input": {
+        "object": "Текущая форма больше не работает",
+        "innerImage": "Если отпущу форму, потеряю основание",
+        "coreNeed": "отделить основание от исчерпанной формы",
+        "supra": "сохранить авторское ядро",
+        "euclid": "Цикл завершён",
+        "riemann": "Новый ход изменит отклик",
+        "outerDomain": "Формы",
+        "nextExperiment": "отпустить текущую форму и начать новый цикл"
+      },
+      "expected": { "az": "A45", "buka": "B1", "transmission": "TX7" }
+    }
+  ]
+}

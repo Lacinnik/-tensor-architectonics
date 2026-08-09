@@ -17,7 +17,7 @@
       <span class="brand-mark" aria-hidden="true">⊕</span>
       <span>
         <b>TZAR · ЭГО-ИНТЕРФЕЙС</b>
-        <small>TZAR-EGO-INTERFACE-001 · 0.1 CANDIDATE</small>
+        <small>TZAR-EGO-INTERFACE-001 · 0.2 CANDIDATE</small>
       </span>
     </a>
     <div class="header-boundary"><span></span> локально · без сервера</div>
@@ -27,7 +27,7 @@
     <section class="intro" aria-labelledby="page-title">
       <p class="eyebrow">ТЕНЗОРНАЯ АРХИТЕКТОНИКА · ЦИФРОВОЙ МОДУЛЬ</p>
       <h1 id="page-title">Не подавить эго.<br><em>Различить запрос.</em></h1>
-      <p class="intro-copy">Интерфейс удерживает предъявленную формулировку, проводит её через Точку, геометрические режимы и два контура обратной связи, а затем возвращает тебе редактируемый кандидат истинного запроса.</p>
+      <p class="intro-copy">Интерфейс удерживает предъявленную формулировку, проводит её через Точку, геометрические режимы, Сингулярную Азбуку и два контура обратной связи, а затем раздельно возвращает публичное слово, редактируемый истинный запрос и машинный паспорт.</p>
     </section>
 
     <nav class="stepper" aria-label="Маршрут эго-интерфейса">
@@ -280,6 +280,17 @@
 
           <div id="run-result" class="run-result" hidden aria-live="polite">
             <div id="result-verdict" class="result-verdict"></div>
+            <div class="public-language-card">
+              <div class="public-language-head"><span>СЛОВО СУБЪЕКТА</span><small>TZAR-LANGUAGE-001 · CANDIDATE</small></div>
+              <blockquote id="result-statement"></blockquote>
+              <div class="singular-formula"><span>СИНГУЛЯРНАЯ ФОРМУЛА</span><b id="result-formula"></b></div>
+              <div class="language-selection" aria-label="Выбранные элементы Сингулярной Азбуки">
+                <div><span>АЗ · ВНУТРЕННЯЯ ЧАСТОТА</span><b id="result-az"></b></div>
+                <div><span>БУКА · ВНЕШНЯЯ ФОРМА</span><b id="result-buka"></b></div>
+                <div><span>ПЕРЕДАЧА · ОПЕРАТОР</span><b id="result-tx"></b></div>
+              </div>
+              <p class="language-boundary">Формула объясняет происхождение текста, но не подменяет его. Выбор элементов детерминирован корпусом и остаётся кандидатом до твоего подтверждения.</p>
+            </div>
             <div class="true-request-card">
               <span>КАНДИДАТ ИСТИННОГО ЗАПРОСА</span>
               <blockquote id="result-candidate"></blockquote>
@@ -292,7 +303,7 @@
             <details class="passport-details"><summary>Машинный паспорт операции</summary><pre id="passport-json"></pre></details>
             <div class="result-actions">
               <button class="button button-primary" type="button" id="rerun-contour">Исполнить снова</button>
-              <button class="button button-secondary" type="button" id="copy-candidate">Скопировать запрос</button>
+              <button class="button button-secondary" type="button" id="copy-candidate">Скопировать результат</button>
               <button class="button button-secondary" type="button" id="export-passport">Экспорт JSON</button>
               <button class="button button-ghost" type="button" id="finish-cycle">Завершить и освободить сессию</button>
             </div>
@@ -318,6 +329,7 @@
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
   <noscript><p class="noscript">Для работы локального интерфейса необходим JavaScript.</p></noscript>
   <script src="./qengine.js"></script>
+  <script src="./tzar-language.js"></script>
   <script src="./ego-core.js"></script>
   <script src="./app.js"></script>
 </body>

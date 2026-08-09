@@ -1,9 +1,12 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 
 await import("./qengine.js");
+await import("./tzar-language.js");
 await import("./ego-core.js");
 
-const { TzarQEngine: Q, TzarEgoCore: Ego } = globalThis;
+const { TzarQEngine: Q, TzarLanguage: Language, TzarEgoCore: Ego } = globalThis;
+const languageEvaluation = JSON.parse(await readFile(new URL("./language-evaluation.json", import.meta.url), "utf8"));
 
 const nowIso = "2026-07-31T10:00:00.000Z";
 let uuidIndex = 0;
@@ -60,11 +63,37 @@ await test("контракт перечисляет шесть движков и
   assert.deepEqual(Q.GEOMETRIES, ["Gᴱ", "Gᴸ", "Gᴿ", "Gᴾ", "Gˢ"]);
 });
 
+await test("авторский языковой корпус содержит 49 Азов, 24 Буки и 7 Передач", () => {
+  assert.equal(Language.AZ.length, 49);
+  assert.equal(Language.BUKI.length, 24);
+  assert.equal(Language.TRANSMISSIONS.length, 7);
+  assert.equal(Language.MODEL_ID, "TZAR-LANGUAGE-001");
+});
+
 await test("синтез формирует редактируемый вопрос, а не диагноз", () => {
   const candidate = Ego.synthesizeCandidate(state());
   assert.match(candidate, /^Как мне /);
   assert.match(candidate, /сохраняя/);
-  assert.match(candidate, /проверить следующий ход/);
+  assert.match(candidate, /проверить выбранный ход/);
+});
+
+await test("языковой компилятор разделяет публичный текст и сингулярную формулу", () => {
+  const result = Language.compile(state());
+  assert.match(result.layers.publicStatement, /Я различаю наблюдаемое/);
+  assert.match(result.layers.publicStatement, /наблюдаемый отклик/);
+  assert.match(result.formula, /×/);
+  assert.match(result.formula, /→/);
+  assert.equal(result.boundary.observedQ, null);
+  assert.equal(result.boundary.diagnosis, "not-performed");
+});
+
+await test("контрольные авторские связки не дрейфуют", () => {
+  for (const fixture of languageEvaluation.cases) {
+    const result = Language.compile(fixture.input);
+    assert.equal(result.selection.az.id, fixture.expected.az, `${fixture.id}: Аз`);
+    assert.equal(result.selection.buka.id, fixture.expected.buka, `${fixture.id}: Бука`);
+    assert.equal(result.selection.transmission.id, fixture.expected.transmission, `${fixture.id}: Передача`);
+  }
 });
 
 await test("полный локальный контур завершается preserved", async () => {
@@ -77,6 +106,10 @@ await test("полный локальный контур завершается 
   assert.match(run.passport.boundary.authentication, /not-external-authentication/);
   assert.match(run.passport.source.algebra.relation, /Az × Бука × TX/);
   assert.equal(run.passport.lifecycleState, "ACTIVE");
+  assert.equal(run.passport.result.language.modelId, "TZAR-LANGUAGE-001");
+  assert.equal(run.passport.result.language.engineBindings.length, 6);
+  assert.equal(run.passport.result.observedQ, null);
+  assert.match(run.passport.result.publicStatement, /Я различаю наблюдаемое/);
 });
 
 await test("истинный запрос, совпавший с голосом эго, останавливает preflight", async () => {

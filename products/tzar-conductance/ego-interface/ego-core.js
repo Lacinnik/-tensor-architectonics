@@ -2,7 +2,7 @@
   "use strict";
 
   const CONSTRUCT_ID = "TZAR-EGO-INTERFACE-001";
-  const CONSTRUCT_VERSION = "0.1.0-candidate";
+  const CONSTRUCT_VERSION = "0.2.0-candidate";
   const ENGINE_CORPUS_VERSION = "0.2.0";
   const PROFILE = "Az/Бука/TX:ego-interface";
 
@@ -20,6 +20,9 @@
   }
 
   function synthesizeCandidate(state) {
+    if (global.TzarLanguage?.compile) {
+      return global.TzarLanguage.compile(state).layers.trueRequest;
+    }
     const need = label(state.coreNeed, "различить следующий живой ход");
     const situation = trimQuote(state.euclid || state.object, 86) || "предъявленной ситуации";
     const invariant = trimQuote(state.supra, 86) || "удерживаемое основание";
@@ -89,9 +92,11 @@
   async function runEgoContour(inputState, environment = {}) {
     const qengine = global.TzarQEngine;
     if (!qengine?.runEngine) throw new Error("TZAR-QENGINE runtime не загружен.");
+    if (!global.TzarLanguage?.compile) throw new Error("TZAR-LANGUAGE runtime не загружен.");
 
     const state = structuredClone(inputState);
-    state.trueRequest = normalize(state.trueRequest) || synthesizeCandidate(state);
+    const language = global.TzarLanguage.compile(state);
+    state.trueRequest = normalize(state.trueRequest) || language.layers.trueRequest;
     state.metrics = Object.fromEntries(
       ["alpha", "iy", "cm", "q", "t"].map(key => [key, Number(state.metrics?.[key])])
     );
@@ -138,6 +143,14 @@
       algebra: {
         profile: PROFILE,
         relation: "F = (Az × Бука × TX) ⊕ (Объект ⊕ Образ) @ Геометрия | α, IЯ, Cm, Q, T",
+      },
+      language: {
+        modelId: language.modelId,
+        modelVersion: language.modelVersion,
+        corpus: language.corpus,
+        formula: language.formula,
+        selection: language.selection,
+        boundary: language.boundary,
       },
       trueRequest: state.trueRequest,
       nextExperiment: state.nextExperiment,
@@ -305,6 +318,8 @@
     const outputSeal = await sha256(JSON.stringify({
       inputSeal,
       trueRequest: state.trueRequest,
+      publicStatement: language.layers.publicStatement,
+      formula: language.formula,
       supra: state.supra,
       nextExperiment: state.nextExperiment,
       engineOperations: results.map(item => item.operationId),
@@ -332,9 +347,10 @@
     if (postflight.outcome !== "completed" || postflight.invariantVerdict !== "preserved") {
       return stopped("postflight", stopReason(postflight), state, basis, outputSeal, results);
     }
+    const boundLanguage = global.TzarLanguage.bindEngines(language, results);
 
     const passport = {
-      schema: "tzar.ego-interface-passport/0.1.0",
+      schema: "tzar.ego-interface-passport/0.2.0",
       constructId: CONSTRUCT_ID,
       constructVersion: CONSTRUCT_VERSION,
       status: "candidate-local-reflection",
@@ -363,10 +379,14 @@
       },
       result: {
         trueRequestCandidate: state.trueRequest,
+        publicStatement: boundLanguage.layers.publicStatement,
+        singularFormula: boundLanguage.formula,
+        language: boundLanguage,
         invariant: state.supra,
         nextExperiment: state.nextExperiment,
         feedbackLoop: `${state.nextExperiment} → наблюдаемый отклик → новая Точка`,
         metrics: state.metrics,
+        observedQ: null,
       },
       engineResults: results,
     };
@@ -374,6 +394,7 @@
     return {
       status: "completed",
       candidate: state.trueRequest,
+      language: boundLanguage,
       state,
       engineResults: results,
       passport,
