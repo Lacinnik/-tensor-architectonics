@@ -1,0 +1,15 @@
+{
+  "name": "Supra XR COSMOS PORTAL",
+  "short_name": "Supra Cosmos",
+  "description": "Local-first atemporal spatial conductor for two image projections.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#030712",
+  "theme_color": "#030712",
+  "lang": "ru",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

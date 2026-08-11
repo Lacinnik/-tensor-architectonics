@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Supra XR">
+  <defs>
+    <radialGradient id="g"><stop stop-color="#173f67"/><stop offset="1" stop-color="#02050d"/></radialGradient>
+    <linearGradient id="r"><stop stop-color="#68f0d2"/><stop offset="1" stop-color="#ffd36a"/></linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="104" fill="url(#g)"/>
+  <circle cx="256" cy="256" r="156" fill="none" stroke="#68f0d2" stroke-opacity=".24" stroke-width="3"/>
+  <ellipse cx="256" cy="256" rx="190" ry="76" fill="none" stroke="url(#r)" stroke-width="12" transform="rotate(-23 256 256)"/>
+  <circle cx="256" cy="256" r="52" fill="#050b18" stroke="#ffd36a" stroke-width="8"/>
+  <path d="M256 173v166M173 256h166" stroke="#eaf6ff" stroke-width="16" stroke-linecap="round"/>
+  <circle cx="413" cy="184" r="15" fill="#ff8fd1"/>
+</svg>

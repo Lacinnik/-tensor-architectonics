@@ -129,6 +129,9 @@ const egoManifest = JSON.parse(await readFile(new URL("./ego-interface/manifest.
 const qengineApp = await readFile(new URL("./qengine/app.mjs", import.meta.url), "utf8");
 const qengineHtml = await readFile(new URL("./qengine/index.html", import.meta.url), "utf8");
 assert.match(platformHtml, /data-mode="ego"/);
+assert.match(platformHtml, /\.\/supra-cosmos\//);
+assert.match(platformHtml, /P_invariant/);
+assert.match(platformHtml, /Q=null/);
 assert.match(platformHtml, /\.\/ego-interface\/\?embed=platform/);
 assert.match(platformHtml, /Тексты остаются внутри эго-интерфейса/);
 assert.match(platformHtml, /ego-interface\/tzar-language\.js/);
@@ -139,4 +142,4 @@ assert.match(egoHtml, /TZAR · Эго-интерфейс/);
 assert.equal(egoManifest.id, "TZAR-EGO-INTERFACE-001");
 assert.equal(egoManifest.languageModel.version, "0.2.0-candidate");
 
-console.log("TZAR-PRODUCT-001: 90 assertions passed");
+console.log("TZAR-PRODUCT-001: 93 assertions passed");
