@@ -39,8 +39,14 @@ jobs:
           node --check products/tzar-conductance/ego-interface/qengine.js
           node --check products/tzar-conductance/ego-interface/ego-core.js
           node --check products/tzar-conductance/ego-interface/app.js
+          node --check products/tzar-conductance/supra-cosmos/core.mjs
+          node --check products/tzar-conductance/supra-cosmos/app.mjs
+          node --check products/tzar-conductance/supra-cosmos/worker.mjs
+          node --check products/tzar-conductance/supra-cosmos/xr-lab.mjs
+          node --check products/tzar-conductance/supra-cosmos/sw.js
       - name: Run product tests
         run: |
           node products/tzar-conductance/tests.mjs
           node products/tzar-conductance/ego-interface/tests.mjs
+          node products/tzar-conductance/supra-cosmos/tests.mjs
           node 05-engineering-applications/QENGINE-001/runtime/tests.mjs

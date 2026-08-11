@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#030712">
+  <meta name="description" content="Supra XR COSMOS PORTAL — локальный безвременной анализ двух пространственных проекций в контуре TeZar.">
+  <meta name="color-scheme" content="dark">
+  <title>Supra XR COSMOS PORTAL</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <a class="skip" href="#workspace">К анализу</a>
+  <div class="cosmos-bg" aria-hidden="true"><span></span><span></span><span></span></div>
+
+  <header class="topbar">
+    <a class="brand" href="../" aria-label="TZAR Conductance">
+      <span class="mark">⊕</span>
+      <span><b>SUPRA XR</b><small>COSMOS PORTAL · 0.4 CANDIDATE</small></span>
+    </a>
+    <div class="top-actions">
+      <button id="locale" class="ghost" type="button" aria-label="Switch language">EN</button>
+      <button id="install" class="ghost" type="button" hidden>Установить</button>
+      <a class="ghost link-button" href="./xr-lab.html">XR-лаборатория</a>
+    </div>
+  </header>
+
+  <main id="workspace">
+    <section class="hero" aria-labelledby="title">
+      <p class="eyebrow" data-i18n="eyebrow">ТЕЗАР · БЕЗВРЕМЕННОЙ ПРОСТРАНСТВЕННЫЙ ПРОВОДНИК</p>
+      <h1 id="title" data-i18n="title">Космос начинается<br><em>с различения.</em></h1>
+      <p class="lead" data-i18n="lead">Две проекции обрабатываются локально. Supra отделяет световые узлы, среду и сенсорный остаток, затем проверяет кандидат P_invariant относительно случайного поля.</p>
+      <div class="boundary"><b>O → S → I → R<sub>g</sub> @ C · O ⊕ I</b><span data-i18n="boundary">Γ задаёт порядок проверки, не вероятность. Q остаётся null до наблюдаемого отклика.</span></div>
+    </section>
+
+    <section class="object-card card" aria-labelledby="object-title">
+      <div class="section-head"><div><span>01 · OBJECT CORE</span><h2 id="object-title" data-i18n="objectTitle">Объект исследования</h2></div><output id="state" class="state" data-tone="idle">READY</output></div>
+      <label class="field"><span data-i18n="objectLabel">Определи объект O дословно</span><input id="object" type="text" maxlength="240" autocomplete="off" placeholder="Например: космическое пространство, представленное двумя проекциями"></label>
+      <p class="micro" data-i18n="objectHint">Интерфейс не назначает объект, галактику, владельца или физическую причину по форме изображения.</p>
+    </section>
+
+    <section class="projection-grid" aria-label="Проекции пространства">
+      <article class="projection card" data-slot="A">
+        <div class="section-head"><div><span>02A · P_CATALOG</span><h2 data-i18n="projectionA">Проекция A</h2></div><output id="meta-a">EMPTY</output></div>
+        <label class="drop" id="drop-a" tabindex="0">
+          <input id="file-a" type="file" accept="image/jpeg,image/png,image/webp">
+          <span class="drop-symbol">✦</span><b data-i18n="dropA">Выбрать или перенести изображение A</b><small>JPEG · PNG · WebP · ≤ 24 MB</small>
+        </label>
+        <canvas id="canvas-a" class="projection-canvas" hidden></canvas>
+        <details class="wcs"><summary data-i18n="wcs">WCS-калибровка · необязательно</summary><div class="wcs-grid">
+          <label>RA°<input id="a-ra" inputmode="decimal" placeholder="0…360"></label>
+          <label>Dec°<input id="a-dec" inputmode="decimal" placeholder="−90…90"></label>
+          <label>Width°<input id="a-width" inputmode="decimal" placeholder="> 0"></label>
+          <label>Height°<input id="a-height" inputmode="decimal" placeholder="> 0"></label>
+        </div></details>
+      </article>
+
+      <article class="projection card" data-slot="B">
+        <div class="section-head"><div><span>02B · P_SENSOR</span><h2 data-i18n="projectionB">Проекция B</h2></div><output id="meta-b">EMPTY</output></div>
+        <label class="drop" id="drop-b" tabindex="0">
+          <input id="file-b" type="file" accept="image/jpeg,image/png,image/webp">
+          <span class="drop-symbol">✦</span><b data-i18n="dropB">Выбрать или перенести изображение B</b><small>JPEG · PNG · WebP · ≤ 24 MB</small>
+        </label>
+        <canvas id="canvas-b" class="projection-canvas" hidden></canvas>
+        <details class="wcs"><summary data-i18n="wcs">WCS-калибровка · необязательно</summary><div class="wcs-grid">
+          <label>RA°<input id="b-ra" inputmode="decimal" placeholder="0…360"></label>
+          <label>Dec°<input id="b-dec" inputmode="decimal" placeholder="−90…90"></label>
+          <label>Width°<input id="b-width" inputmode="decimal" placeholder="> 0"></label>
+          <label>Height°<input id="b-height" inputmode="decimal" placeholder="> 0"></label>
+        </div></details>
+      </article>
+    </section>
+
+    <section class="runbar card">
+      <div><b data-i18n="localTitle">Локальный контур</b><span data-i18n="localText">Изображения не загружаются и не входят в JSON-экспорт.</span></div>
+      <button id="analyze" class="primary" type="button" disabled><span data-i18n="analyze">Провести через Supra</span><b>→</b></button>
+    </section>
+
+    <section id="results" class="results" hidden aria-live="polite">
+      <article class="metrics card">
+        <div class="section-head"><div><span>03 · SINGULAR POINT</span><h2>P_invariant</h2></div><output id="fingerprint">SPX-—</output></div>
+        <div class="metric-grid">
+          <div><span data-i18n="sourcesA">Источники A</span><strong id="sources-a">—</strong></div>
+          <div><span data-i18n="sourcesB">Источники B</span><strong id="sources-b">—</strong></div>
+          <div><span data-i18n="raw">Сырое сходство</span><strong id="raw">—</strong></div>
+          <div><span data-i18n="nullModel">Случайный фон</span><strong id="baseline">—</strong></div>
+          <div class="accent"><span>P_invariant excess</span><strong id="excess">—</strong></div>
+          <div><span>Q / response</span><strong>NULL</strong></div>
+        </div>
+        <p id="result-boundary" class="result-boundary"></p>
+      </article>
+
+      <article class="layers card">
+        <div class="section-head"><div><span>04 · LAYER SEPARATION</span><h2 data-i18n="layers">Небо · среда · сенсор · инвариант</h2></div></div>
+        <div class="layer-grid">
+          <figure><canvas id="layer-sky"></canvas><figcaption>P_sky · nodes</figcaption></figure>
+          <figure><canvas id="layer-medium"></canvas><figcaption>P_medium · diffuse field</figcaption></figure>
+          <figure><canvas id="layer-sensor"></canvas><figcaption>P_sensor · residual</figcaption></figure>
+          <figure><canvas id="layer-invariant"></canvas><figcaption>P_invariant · null-adjusted</figcaption></figure>
+        </div>
+      </article>
+
+      <article class="hypotheses card">
+        <div class="section-head"><div><span>05 · TEZAR HYPOTHESES</span><h2 data-i18n="hypotheses">Безвременное ранжирование</h2></div><code>Γ<sub>g</sub> = α·IЯ·C<sub>m</sub>·R<sub>g</sub>·100</code></div>
+        <div id="hypothesis-list" class="hypothesis-list"></div>
+      </article>
+
+      <article class="session card">
+        <div class="section-head"><div><span>06 · NEW POINT</span><h2 data-i18n="newPoint">Паспорт исследования</h2></div></div>
+        <div class="session-actions">
+          <button id="export" class="primary" type="button" data-i18n="export">Экспортировать JSON</button>
+          <label class="ghost file-button"><span data-i18n="import">Открыть паспорт</span><input id="import" type="file" accept="application/json,.json"></label>
+          <button id="reset" class="ghost" type="button" data-i18n="reset">Новая сессия</button>
+        </div>
+        <pre id="passport" class="passport"></pre>
+      </article>
+    </section>
+  </main>
+
+  <footer>
+    <div><b>SUPRA XR COSMOS PORTAL</b><span>0.4.0-candidate · local-first · Q=null</span></div>
+    <nav><a href="./README.md">Метод</a><a href="./PRIVACY.md">Приватность</a><a href="../../">TZAR Conductance</a></nav>
+  </footer>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="./app.mjs"></script>
+</body>
+</html>
