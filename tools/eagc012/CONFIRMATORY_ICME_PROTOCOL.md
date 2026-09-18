@@ -31,7 +31,7 @@ No result is transferable to SIR. The previously observed SIR result remains `TR
 
 ```bash
 python tools/eagc012/validate_confirmatory_protocol.py
-python -m unittest tools/eagc012/test_confirmatory_protocol.py
+python -m unittest discover -s tools/eagc012 -p 'test_confirmatory_protocol.py'
 ```
 
 The validator fails closed on target access before manifest freeze, event replacement, SIR transfer, model drift, relaxed superiority criteria, or incomplete reproducibility requirements.
