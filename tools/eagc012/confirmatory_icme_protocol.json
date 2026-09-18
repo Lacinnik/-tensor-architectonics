@@ -1,0 +1,171 @@
+{
+  "protocol_id": "TZAR-RESEARCH-EAGC-012-CONFIRMATORY-ICME",
+  "protocol_version": "1.0.0-prospective",
+  "status": "FROZEN-PRE-TARGET",
+  "claim_scope": {
+    "domain": "near-Earth ICME observed by Wind",
+    "primary_claim": "EAGC is noninferior to Newell for post-cutoff minimum SYM-H on a strictly prospective ICME cohort",
+    "transport_exclusions": [
+      "SIR"
+    ],
+    "forbidden_inferences": [
+      "No ICME result may be transferred to SIR.",
+      "PASS-SUPERIOR may not be reported unless every preregistered superiority condition passes on this new cohort."
+    ]
+  },
+  "freeze": {
+    "anchor_kind": "introducing_git_commit",
+    "repository": "Lacinnik/-tensor-architectonics",
+    "path": "tools/eagc012/confirmatory_icme_protocol.json",
+    "rule": "The immutable anchor is the first Git commit that contains this protocol_id and protocol_version at this path.",
+    "prospective_boundary": "Both icme_start_time and the catalog snapshot retrieval time MUST be strictly later than the introducing commit timestamp.",
+    "amendment_policy": "Any change to cohort, cutoff, model, comparison, endpoint, or decision criteria requires a new protocol version and a new prospective cohort beginning after that version's introducing commit."
+  },
+  "cohort": {
+    "planned_events": 20,
+    "ordering": [
+      "icme_start_time ascending",
+      "icmecat_id ascending"
+    ],
+    "selection_rule": "Take the first 20 eligible rows in the first post-freeze HELIO4CAST ICMECAT snapshots; once selected, an event cannot be replaced.",
+    "eligibility": {
+      "sc_insitu": "Wind",
+      "required_fields": [
+        "icmecat_id",
+        "sc_insitu",
+        "icme_start_time",
+        "mo_end_time"
+      ],
+      "icme_start_after_freeze": true,
+      "minimum_minutes_after_cutoff": 720,
+      "whole_minute_timestamps": true,
+      "overlap_policy": "No event window may overlap another selected event window. For a deterministic overlap, retain the earlier row under cohort.ordering and skip the later row."
+    },
+    "replacement_policy": "NONE",
+    "accrual_state": "NOT_STARTED",
+    "event_manifest_path": "tools/eagc012/frozen/confirmatory-icme-v1-events.json",
+    "manifest_freeze_rule": "The target-blind event manifest must be committed before any target source is queried. Scoring must refuse an uncommitted or subsequently edited manifest."
+  },
+  "sources": {
+    "selector": {
+      "name": "HELIO4CAST ICMECAT",
+      "version_at_preregistration": "2.3",
+      "landing_url": "https://helioforecast.space/icmecat",
+      "machine_url_pattern": "https://helioforecast.space/static/sync/icmecat/HELIO4CAST_ICMECAT_v{major}{minor}.csv",
+      "version_policy": "At each accrual check, use the highest officially linked ICMECAT version greater than or equal to 2.3; record the exact versioned URL and hashes. Never combine rows from unofficial mirrors.",
+      "doi": "https://doi.org/10.6084/m9.figshare.6356420",
+      "allowlisted_columns": [
+        "icmecat_id",
+        "sc_insitu",
+        "icme_start_time",
+        "mo_end_time"
+      ],
+      "target_columns_forbidden_during_accrual": [
+        "Dst",
+        "SYM-H"
+      ],
+      "snapshot_requirements": [
+        "retrieved_at_utc",
+        "source_sha256",
+        "projected_rows_sha256"
+      ]
+    },
+    "predictors_and_target": {
+      "name": "NASA OMNI high-resolution 1-minute data",
+      "base_url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min",
+      "dataset_id": "OMNI_HRO_1MIN",
+      "access_boundary": "Do not query this source for selected event windows until the complete target-blind cohort manifest is frozen in an earlier commit.",
+      "target": "minimum SYM-H over [cutoff, mo_end_time)",
+      "target_field": "SYM-H"
+    }
+  },
+  "window": {
+    "semantics": "half-open [start,end)",
+    "start": "icme_start_time",
+    "cutoff_minutes_after_start": 720,
+    "end": "mo_end_time",
+    "prediction_prefix": "[icme_start_time, cutoff)",
+    "target_window": "[cutoff, mo_end_time)"
+  },
+  "model": {
+    "name": "EAGC",
+    "kind": "standardized_ridge",
+    "alpha": 10.0,
+    "features": [
+      "pressure_peak",
+      "log_Newell",
+      "pressure_recent",
+      "south_hours"
+    ],
+    "training_cohort": "All 80 previously disclosed Richardson-Cane development events only",
+    "fit_policy": "Fit preprocessing and coefficients once on the 80-event development cohort. Confirmatory target values must never affect fitting, feature selection, alpha, imputation, or calibration.",
+    "source_commit": "2da7de6df1ca0d3ff2a1a89576f078c97d389298",
+    "source_files": [
+      "tools/eagc012/policy.json",
+      "tools/eagc012/run_gate.py"
+    ]
+  },
+  "comparison": {
+    "primary_baseline": "Newell",
+    "secondary_descriptive_baselines": [
+      "V_Bs",
+      "I_Q",
+      "Burton_OBrien_McPherron"
+    ],
+    "primary_metric": "event-level RMSE of predicted versus observed minimum SYM-H",
+    "paired_resampling_unit": "event",
+    "bootstrap_replicates": 10000,
+    "bootstrap_seed": 12012,
+    "noninferiority_margin_relative_rmse": -0.05,
+    "superiority_margin_relative_rmse": 0.05,
+    "minimum_bootstrap_probability": 0.9
+  },
+  "decision": {
+    "PASS-NONINFERIOR": [
+      "All 20 frozen events are SCORABLE.",
+      "Point relative RMSE improvement versus Newell is greater than -0.05.",
+      "Paired-bootstrap probability that relative improvement is greater than -0.05 is at least 0.90.",
+      "Every leave-one-event-out relative improvement is greater than -0.05."
+    ],
+    "PASS-SUPERIOR": [
+      "Every PASS-NONINFERIOR condition passes.",
+      "Point relative RMSE improvement versus Newell is at least 0.05.",
+      "Paired-bootstrap probability that relative improvement is greater than 0 is at least 0.90.",
+      "Every leave-one-event-out relative improvement is greater than 0."
+    ],
+    "REJECT": "All 20 frozen events are SCORABLE and at least one PASS-NONINFERIOR condition fails.",
+    "HOLD": "The target-blind manifest is not frozen, fewer than 20 events have accrued, any event is not SCORABLE, provenance is incomplete, or an invariant is violated.",
+    "precedence": [
+      "HOLD",
+      "PASS-SUPERIOR",
+      "PASS-NONINFERIOR",
+      "REJECT"
+    ]
+  },
+  "data_quality": {
+    "required_prefix_fields": [
+      "by",
+      "bz",
+      "speed",
+      "pressure",
+      "symh"
+    ],
+    "minimum_prefix_coverage": 0.75,
+    "minimum_target_symh_coverage": 0.9,
+    "maximum_gap_minutes": 15,
+    "failure_policy": "Fail closed to HOLD; never replace an accrued event."
+  },
+  "reproducibility": {
+    "python": "3.12",
+    "required_artifacts": [
+      "target-blind event manifest with snapshot hashes and freeze commit",
+      "per-event source file hashes",
+      "fitted preprocessing statistics and coefficients",
+      "per-event predictions for EAGC and every baseline",
+      "gate metrics and paired bootstrap samples summary",
+      "claim adjudication with protocol version and scorer commit"
+    ],
+    "determinism": "All ordering and tie breaks are explicit; bootstrap seed and replicate count are fixed.",
+    "runner_guard": "The scorer must verify that the manifest commit predates target retrieval and that protocol/model hashes match before reading target values."
+  }
+}
