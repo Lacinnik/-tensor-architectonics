@@ -1,0 +1,562 @@
+{
+  "artifact_id": "TZAR-RESEARCH-EAGC-012-CONFIRMATORY-ICME-MODEL",
+  "artifact_version": "1.1.0-prospective",
+  "status": "FROZEN-PRE-TARGET",
+  "training_cohort": {
+    "event_count": 80,
+    "event_ids": [
+      "V2003-1021-2200",
+      "V2004-0122-0137",
+      "V2004-0722-1036",
+      "V2004-0725-1500",
+      "V2004-0829-0909",
+      "V2004-1211-1340",
+      "V2005-0107-0922",
+      "V2005-0118-2100",
+      "V2005-0131-0900",
+      "V2005-0220-1200",
+      "V2005-0520-0300",
+      "V2005-0530-2300",
+      "V2005-0710-0337",
+      "V2005-0717-0134",
+      "V2005-0915-0600",
+      "V2005-1231-0000",
+      "V2006-0830-2000",
+      "V2006-1128-1300",
+      "V2008-1204-0400",
+      "V2008-1216-1159",
+      "V2009-0603-1600",
+      "V2009-1219-1000",
+      "V2010-0219-1500",
+      "V2010-0411-1304",
+      "V2010-0528-0258",
+      "V2010-0803-1741",
+      "V2011-0124-0700",
+      "V2011-0805-1751",
+      "V2012-0121-0501",
+      "V2012-0516-1600",
+      "V2012-1126-0512",
+      "V2013-0118-1237",
+      "V2013-0627-1438",
+      "V2014-0220-0318",
+      "V2014-0418-1900",
+      "V2014-0917-0200",
+      "V2015-0410-0000",
+      "V2015-0622-1833",
+      "V2015-1219-1616",
+      "V2019-0513-2326",
+      "V2019-0516-2100",
+      "V2019-0526-2214",
+      "V2019-1029-2000",
+      "V2019-1111-0600",
+      "V2020-0420-0231",
+      "V2020-1210-0210",
+      "V2021-0223-0200",
+      "V2021-0512-0637",
+      "V2021-0526-1244",
+      "V2021-0827-0114",
+      "V2021-1001-1000",
+      "V2021-1103-1942",
+      "V2022-0118-2340",
+      "V2022-0201-2220",
+      "V2022-0209-2100",
+      "V2022-0313-1047",
+      "V2022-0331-0224",
+      "V2022-0406-2318",
+      "V2022-0412-1122",
+      "V2022-0709-1200",
+      "V2022-0718-2119",
+      "V2022-1021-1000",
+      "V2023-0103-2100",
+      "V2023-0315-0427",
+      "V2023-0323-0500",
+      "V2023-0423-1738",
+      "V2023-0707-1200",
+      "V2023-0924-2043",
+      "V2023-1005-2225",
+      "V2023-1201-0926",
+      "V2024-0321-0250",
+      "V2024-0324-1434",
+      "V2024-0723-2023",
+      "V2024-0730-0003",
+      "V2024-0810-1250",
+      "V2024-0827-0841",
+      "V2024-0902-1800",
+      "V2024-1006-0739",
+      "V2024-1010-1514",
+      "V2024-1231-1621"
+    ],
+    "event_registry_source": "tools/eagc012/policy.json#development_events",
+    "event_summary_sha256": "c7c7cda057f7b6f10e6ec1e20ca669cfb64ffa2c123fb5f5a133e59f7bc59039",
+    "source_files": {
+      "200310": {
+        "file": "omni_min200310.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min200310.asc",
+        "sha256": "91eea7d9ec65455456b42c39e04da2322e397aaa7d8122f196e437c14e3732c3",
+        "size_bytes": 13392000
+      },
+      "200401": {
+        "file": "omni_min200401.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min200401.asc",
+        "sha256": "21f9d0f6ffba76292d0b4a3bb7ae73887afa29e015da123dd6b338acc97d54d9",
+        "size_bytes": 13392000
+      },
+      "200407": {
+        "file": "omni_min200407.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min200407.asc",
+        "sha256": "561021951f60e9d68d863c1b6dce42768515c4e1fad3be4029d8c0c0f8bbd26c",
+        "size_bytes": 13392000
+      },
+      "200408": {
+        "file": "omni_min200408.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min200408.asc",
+        "sha256": "a716eb785913e0e066c3f13aa7bc49b10ead3be4fb75da857dd80761a66e54c6",
+        "size_bytes": 13392000
+      },
+      "200412": {
+        "file": "omni_min200412.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min200412.asc",
+        "sha256": "57b8f0da255bbea7c14f2b7998bd1f412c6fbbb100bc8beee98bdf82211cd2ad",
+        "size_bytes": 13392000
+      },
+      "200501": {
+        "file": "omni_min200501.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min200501.asc",
+        "sha256": "0361303a64a2d4bc310e6a55feeffd68289fa9e5605e9c833f781ddbaa39b332",
+        "size_bytes": 13392000
+      },
+      "200502": {
+        "file": "omni_min200502.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min200502.asc",
+        "sha256": "0f11134bc857cccffe6269a63bfdde8ec628fc3567d370da7d6e39243414f893",
+        "size_bytes": 12096000
+      },
+      "200505": {
+        "file": "omni_min200505.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min200505.asc",
+        "sha256": "b129c6d0e1b0a9a8440b954831b37a00f736773257a396228bd944fd696c2e38",
+        "size_bytes": 13392000
+      },
+      "200506": {
+        "file": "omni_min200506.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min200506.asc",
+        "sha256": "25e46eb2ad05ca7651f8f8836439e6e660b6e5e96b0ae75ea370004e6ff7bfc2",
+        "size_bytes": 12960000
+      },
+      "200507": {
+        "file": "omni_min200507.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min200507.asc",
+        "sha256": "a3d634a8fadc54e08ae7f64f54e6069a28481dbfa2714edc69d9f01878f8a990",
+        "size_bytes": 13392000
+      },
+      "200509": {
+        "file": "omni_min200509.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min200509.asc",
+        "sha256": "ebf5aeee1779d8e713f566286580bfcfabc8ad0bd4574460647d69b4577d50ae",
+        "size_bytes": 12960000
+      },
+      "200512": {
+        "file": "omni_min200512.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min200512.asc",
+        "sha256": "6664404fd3dbd80dfeb710fae0ca95b404ab8512bf24f984ff595fb47ce41800",
+        "size_bytes": 13392000
+      },
+      "200601": {
+        "file": "omni_min200601.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min200601.asc",
+        "sha256": "63f12f7d48424c3eb0bff0532400c475c2a3d630e77e3b665648c96fcd58fd7b",
+        "size_bytes": 13392000
+      },
+      "200608": {
+        "file": "omni_min200608.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min200608.asc",
+        "sha256": "c874229c4a4dad5100bf2e112bb7443c04740234f488b8effabf41ef4d752934",
+        "size_bytes": 13392000
+      },
+      "200609": {
+        "file": "omni_min200609.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min200609.asc",
+        "sha256": "d0f019e15caf746930206c23b9603c3d2462a10fcfadcdae6852ca9756f725ae",
+        "size_bytes": 12960000
+      },
+      "200611": {
+        "file": "omni_min200611.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min200611.asc",
+        "sha256": "c44e9c1b99be7d9189c2f6a357dd6aadcc073ab2ce33139c2cb1ed20dbc053c1",
+        "size_bytes": 12960000
+      },
+      "200812": {
+        "file": "omni_min200812.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min200812.asc",
+        "sha256": "bcdb74e1230c4fd33be6ee28e7f50dd4148f541da96edeb5dfea7260185b3f79",
+        "size_bytes": 13392000
+      },
+      "200906": {
+        "file": "omni_min200906.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min200906.asc",
+        "sha256": "1ed551e58cddbf4b699b2c4efbc880824cf8491cb4ea288a1550bf9162eb5207",
+        "size_bytes": 12960000
+      },
+      "200912": {
+        "file": "omni_min200912.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min200912.asc",
+        "sha256": "3866a8e3e4d9db382c676f3b2fba075556bd99d3c12eadc6650562305a9a4d9e",
+        "size_bytes": 13392000
+      },
+      "201002": {
+        "file": "omni_min201002.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min201002.asc",
+        "sha256": "8534df369ec7e72977045284189e95a321d8223d8b2c04f9b1f28beedf852f73",
+        "size_bytes": 12096000
+      },
+      "201004": {
+        "file": "omni_min201004.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min201004.asc",
+        "sha256": "231585dbf33f2b0b3ff34139c5d740c7f4f1c2918ea00223cf0a69614b52f003",
+        "size_bytes": 12960000
+      },
+      "201005": {
+        "file": "omni_min201005.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min201005.asc",
+        "sha256": "fa425fa674985537d117e1a6feae02617acde30b999c3d179fdf94e1f9fd9ba5",
+        "size_bytes": 13392000
+      },
+      "201008": {
+        "file": "omni_min201008.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min201008.asc",
+        "sha256": "80ab8ba08fc5dbd7f4d57adff6f408a8794b4006ccf078f2d3fbd091988e05da",
+        "size_bytes": 13392000
+      },
+      "201101": {
+        "file": "omni_min201101.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min201101.asc",
+        "sha256": "ece476ad79a7d1624e6078fb808d158d5395c18964ca58ce353cb07e4b6ca6d6",
+        "size_bytes": 13392000
+      },
+      "201108": {
+        "file": "omni_min201108.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min201108.asc",
+        "sha256": "531df1c7348ddb924c32974a9b446ec5353eda64f4eb0a75eaeff1e87efbbf66",
+        "size_bytes": 13392000
+      },
+      "201201": {
+        "file": "omni_min201201.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min201201.asc",
+        "sha256": "10f821d56a3a62dbe7413958c2e0bbdc965ac39c61dfca9785876ae40635f62e",
+        "size_bytes": 13392000
+      },
+      "201205": {
+        "file": "omni_min201205.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min201205.asc",
+        "sha256": "131558b9055d06aa9fe44d65d505200ec125ca5074e13293c63c77aa10281ada",
+        "size_bytes": 13392000
+      },
+      "201211": {
+        "file": "omni_min201211.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min201211.asc",
+        "sha256": "c8533826cf9e6eab5c3b9cb88a02e2856aab9e77e0d388443436607c4f7be92f",
+        "size_bytes": 12960000
+      },
+      "201301": {
+        "file": "omni_min201301.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min201301.asc",
+        "sha256": "ffa2ca1577a3ed18073a21430e159b71f21b67efc3965e0301319dad2dc1e823",
+        "size_bytes": 13392000
+      },
+      "201306": {
+        "file": "omni_min201306.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min201306.asc",
+        "sha256": "236ea5cc80b24df5556cc6a3c562b4e4c8ad67b6f3fb6f0655965f2a05b905a8",
+        "size_bytes": 12960000
+      },
+      "201402": {
+        "file": "omni_min201402.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min201402.asc",
+        "sha256": "6cf7adfa54fc6f7bfbc1ebf9ba8769514a0e3565b50678dc5016b6e4289d3826",
+        "size_bytes": 12096000
+      },
+      "201404": {
+        "file": "omni_min201404.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min201404.asc",
+        "sha256": "d4075b9038ff3276cbe7d1218ff195ab7c63e0101a3124e85aae2e4751f5c911",
+        "size_bytes": 12960000
+      },
+      "201409": {
+        "file": "omni_min201409.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min201409.asc",
+        "sha256": "9e0992164331e0621d4865978b52909cddd75da3501a94e32457d1cad63ccec9",
+        "size_bytes": 12960000
+      },
+      "201504": {
+        "file": "omni_min201504.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min201504.asc",
+        "sha256": "eb5a46ebc9a2f90cfaa3b9a737504a8afcb630dd64e57e852a45eb7e34972ec5",
+        "size_bytes": 12960000
+      },
+      "201506": {
+        "file": "omni_min201506.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min201506.asc",
+        "sha256": "2dd321386f83b0d6323f5dbd8a52bd6c7d57156bab7d21464aa3a2eb5cdab883",
+        "size_bytes": 12960000
+      },
+      "201512": {
+        "file": "omni_min201512.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min201512.asc",
+        "sha256": "d57a73f94342395c48f54d1d8d55d7bd0c50324c11d4303dc9f212524625ef55",
+        "size_bytes": 13392000
+      },
+      "201905": {
+        "file": "omni_min201905.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min201905.asc",
+        "sha256": "eb809115af4e8e14472bd8c621f5d3a2237c658e568c93044ba58c11b418f941",
+        "size_bytes": 13392000
+      },
+      "201910": {
+        "file": "omni_min201910.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min201910.asc",
+        "sha256": "2e2f2f9f4d71817f49bd84b34dcbb955026ae6f9cd535f0e65aa7c41e42ce1b8",
+        "size_bytes": 13392000
+      },
+      "201911": {
+        "file": "omni_min201911.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min201911.asc",
+        "sha256": "b1ab5197bd84b3ff955471c9dc315655ecc76c401145ca4013027fe32a17d5ed",
+        "size_bytes": 12960000
+      },
+      "202004": {
+        "file": "omni_min202004.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min202004.asc",
+        "sha256": "7a317855aec6ee2b35e33e389d28514c53764217b9a7745fd335da9c660c15aa",
+        "size_bytes": 12960000
+      },
+      "202012": {
+        "file": "omni_min202012.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min202012.asc",
+        "sha256": "0639069d17f1b3f656c549263bc73d6563d77ddc1a71ffa8a07ea5f374acc280",
+        "size_bytes": 13392000
+      },
+      "202102": {
+        "file": "omni_min202102.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min202102.asc",
+        "sha256": "5a01ea8023c903d746f9bdc47be768edb1da8d0009a2085574a2afd424eb6376",
+        "size_bytes": 12096000
+      },
+      "202105": {
+        "file": "omni_min202105.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min202105.asc",
+        "sha256": "f379007aa5ae0edf321ac056b056e1b898456e783593f82cc36f2b6471f21dc7",
+        "size_bytes": 13392000
+      },
+      "202108": {
+        "file": "omni_min202108.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min202108.asc",
+        "sha256": "00be1152091e47958587613b7b95fe41db2f008d2846a47b97479081b4834d3d",
+        "size_bytes": 13392000
+      },
+      "202110": {
+        "file": "omni_min202110.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min202110.asc",
+        "sha256": "f892ef5fddc81b6f1be106d739049bc46bca3586920bf061dea28f309dd0d866",
+        "size_bytes": 13392000
+      },
+      "202111": {
+        "file": "omni_min202111.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min202111.asc",
+        "sha256": "5cb438fdab490f48e50f7df8819a84cf27141ae91d45c92960c72e6772d9a6bc",
+        "size_bytes": 12960000
+      },
+      "202201": {
+        "file": "omni_min202201.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min202201.asc",
+        "sha256": "0be8cf62f596a4c09b378815043b318028c12d9aeb2668185b6a42512ab1bbd5",
+        "size_bytes": 13392000
+      },
+      "202202": {
+        "file": "omni_min202202.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min202202.asc",
+        "sha256": "e806320582323c4c0d00b121d47641746135a504c98e663dc145e40b4dabbe03",
+        "size_bytes": 12096000
+      },
+      "202203": {
+        "file": "omni_min202203.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min202203.asc",
+        "sha256": "61b884d2b957f8a942c049a10340717e8867461b64174a11be28c2734d8a667d",
+        "size_bytes": 13392000
+      },
+      "202204": {
+        "file": "omni_min202204.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min202204.asc",
+        "sha256": "a3187298d5cb56d3707707a8f5f2ab2e15af831d1f8ed7045ecf2e6f4a5ec7f1",
+        "size_bytes": 12960000
+      },
+      "202207": {
+        "file": "omni_min202207.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min202207.asc",
+        "sha256": "233eba3584a3543dd1a0d78015e6c0f9ee4471a5264fdf336bb16f175f66ed3a",
+        "size_bytes": 13392000
+      },
+      "202210": {
+        "file": "omni_min202210.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min202210.asc",
+        "sha256": "a7d1a4961583012f464bb0154286342cdf7b3d6e47061cef66e4105420a24966",
+        "size_bytes": 13392000
+      },
+      "202301": {
+        "file": "omni_min202301.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min202301.asc",
+        "sha256": "5a3365b5bc1599e80723cb1a7d597b202a5424d3ccaac2e3392a14fc06ee9089",
+        "size_bytes": 13392000
+      },
+      "202303": {
+        "file": "omni_min202303.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min202303.asc",
+        "sha256": "c0f1171063d8ed1e00d5acd594da762798d0fedb5f7f429849545752999445ba",
+        "size_bytes": 13392000
+      },
+      "202304": {
+        "file": "omni_min202304.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min202304.asc",
+        "sha256": "d45a5a2275136dbac18b64c93e7c35a5ef884ab6d038f8c65954ceb0b1004b3b",
+        "size_bytes": 12960000
+      },
+      "202307": {
+        "file": "omni_min202307.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min202307.asc",
+        "sha256": "b3f59d86f85f8983387c28d30d8fb8c9cb2dac68c6c9c9ff912739d2d1d6c03a",
+        "size_bytes": 13392000
+      },
+      "202309": {
+        "file": "omni_min202309.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min202309.asc",
+        "sha256": "dc3344ccbaa84fbf7d469b0b2b2c358ca2278b7d24278ea37f83625aa1f08222",
+        "size_bytes": 12960000
+      },
+      "202310": {
+        "file": "omni_min202310.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min202310.asc",
+        "sha256": "ad4aa4f521300667a92b976a6f4b8f703131d0f118fe7d51c58d1fb49860d7a4",
+        "size_bytes": 13392000
+      },
+      "202312": {
+        "file": "omni_min202312.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min202312.asc",
+        "sha256": "f0f15a40f30945e16527995dca97ca0ec078f5ad751cce6ab2fd0abe5ecc5e78",
+        "size_bytes": 13392000
+      },
+      "202403": {
+        "file": "omni_min202403.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min202403.asc",
+        "sha256": "67280ed2a439a8e83b66174580eaeb6f550fddbad3684cec0e045ca58eacd677",
+        "size_bytes": 13392000
+      },
+      "202407": {
+        "file": "omni_min202407.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min202407.asc",
+        "sha256": "773f90db9eadf77ce560a967cbf5d0d7fe02249db0f08b5f277c8c6f4f4c6fed",
+        "size_bytes": 13392000
+      },
+      "202408": {
+        "file": "omni_min202408.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min202408.asc",
+        "sha256": "8a9fdd70bfde2e31f95d3473dd7b96fcf2a719e5a8f4ab6af167317ace6a9c2c",
+        "size_bytes": 13392000
+      },
+      "202409": {
+        "file": "omni_min202409.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min202409.asc",
+        "sha256": "c0d02ee398a0a60da29eb779b59b67661e0f71465f4fa335ae16e4e041671ec5",
+        "size_bytes": 12960000
+      },
+      "202410": {
+        "file": "omni_min202410.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min202410.asc",
+        "sha256": "6e139f3dd74832af76878aad9415e21f9077759cc7956fd9c9fb9b3eba434a30",
+        "size_bytes": 13392000
+      },
+      "202412": {
+        "file": "omni_min202412.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min202412.asc",
+        "sha256": "546bff412140388ad9786042533646ac33debfc4ab5103815834efa6e66e7f59",
+        "size_bytes": 13392000
+      },
+      "202501": {
+        "file": "omni_min202501.asc",
+        "url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min/omni_min202501.asc",
+        "sha256": "2f899c4f37b1d89fea33ab555e5da9d164c85a783602ff3c53a5eea29f97aaac",
+        "size_bytes": 13392000
+      }
+    }
+  },
+  "provenance": {
+    "model_source_commit": "2da7de6df1ca0d3ff2a1a89576f078c97d389298",
+    "policy_sha256": "6d4eb03c9750c5cd0b76ca32dc73896cbff59a469a331154772a97f51d0b680a",
+    "runner_sha256": "d98f12d7f08ce8d94699767130d0085f87fb82cfab5d03b66e5a8db3d79fc263",
+    "workflow_run_id": 35385191691,
+    "workflow_head_sha": "69ba621fe3b7b3406709224ae6075d5c119a1938",
+    "workflow_artifact_id": 10563372766,
+    "workflow_artifact_sha256": "666edb86bf8223bdca87e040e8e0fe0501b9c84f468f27e233e02bde8372e151"
+  },
+  "models": {
+    "V_Bs": {
+      "kind": "log_linear",
+      "feature": "V_Bs",
+      "intercept": -44.40682617507301,
+      "slope": 17.318891195500193
+    },
+    "I_Q": {
+      "kind": "log_linear",
+      "feature": "I_Q",
+      "intercept": -54.46283419424073,
+      "slope": 17.054702981822686
+    },
+    "Newell": {
+      "kind": "log_linear",
+      "feature": "Newell",
+      "intercept": -268.0786234402392,
+      "slope": 38.837617703509004
+    },
+    "Burton_OBrien_McPherron": {
+      "kind": "log_linear",
+      "feature": "Burton_OBrien_McPherron",
+      "intercept": 19.880269477809122,
+      "slope": 15.363712714947567
+    },
+    "EAGC": {
+      "kind": "standardized_ridge",
+      "features": [
+        "pressure_peak",
+        "log_Newell",
+        "pressure_recent",
+        "south_hours"
+      ],
+      "alpha": 10.0,
+      "intercept": 68.85,
+      "coefficients": [
+        14.569064644880662,
+        9.835455508609318,
+        8.788375851026336,
+        11.407933202219683
+      ],
+      "means": [
+        12.26775,
+        8.675316442228572,
+        3.9666875,
+        1.9679749999999998
+      ],
+      "scales": [
+        10.348421011801753,
+        0.8070148398709976,
+        2.2199265111358417,
+        2.0191973837084376
+      ]
+    }
+  },
+  "bootstrap_indices": {
+    "path": "tools/eagc012/frozen/confirmatory-icme-v1.1-bootstrap-indices.bin",
+    "sha256": "f5c51d0a02b7ca4d17ae6f703c2f84d7b8a99b03190bdc0ba5702b91efb28027",
+    "encoding": "uint8 row-major",
+    "replicates": 10000,
+    "sample_size": 20
+  },
+  "fit_policy": "Parameters are immutable. Prospective scoring MUST NOT refit or recalibrate any model."
+}

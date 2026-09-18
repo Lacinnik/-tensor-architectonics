@@ -1,0 +1,27 @@
+{
+  "registry_id": "TZAR-RESEARCH-EAGC-012-CONFIRMATORY-REGISTRY",
+  "active_protocol": {
+    "protocol_id": "TZAR-RESEARCH-EAGC-012-CONFIRMATORY-ICME",
+    "protocol_version": "1.1.0-prospective",
+    "path": "tools/eagc012/confirmatory_icme_protocol_v1.1.0.json",
+    "status": "FROZEN-PRE-TARGET",
+    "freeze_anchor": "introducing_git_commit"
+  },
+  "versions": [
+    {
+      "protocol_version": "1.0.0-prospective",
+      "path": "tools/eagc012/confirmatory_icme_protocol.json",
+      "freeze_commit": "2203bcd4513b538aec66062083a882f88f9ebf97",
+      "status": "SUPERSEDED-BEFORE-ACCRUAL",
+      "superseded_by": "1.1.0-prospective",
+      "reason": "Author acceptance found unenforced freeze, provenance, append-only accrual, scoring, and reproducibility invariants."
+    },
+    {
+      "protocol_version": "1.1.0-prospective",
+      "path": "tools/eagc012/confirmatory_icme_protocol_v1.1.0.json",
+      "status": "FROZEN-PRE-TARGET",
+      "freeze_anchor": "introducing_git_commit",
+      "accrual_state": "NOT_STARTED"
+    }
+  ]
+}
