@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail-closed validation for the EAGC-012 prospective ICME protocol."""
+"""Fail-closed semantic, artifact, and Git-anchor validation for ICME v1.1.1."""
 
 from __future__ import annotations
 
@@ -8,16 +8,50 @@ import json
 from pathlib import Path
 from typing import Any
 
+from confirmatory_common import (
+    BOOTSTRAP_PATH,
+    MODEL_PATH,
+    PROTOCOL_ID,
+    PROTOCOL_PATH,
+    PROTOCOL_VERSION,
+    REGISTRY_PATH,
+    repository_root,
+    sha256_file,
+    verify_protocol_anchor,
+)
 
-EXPECTED_PROTOCOL_ID = "TZAR-RESEARCH-EAGC-012-CONFIRMATORY-ICME"
-EXPECTED_FEATURES = [
-    "pressure_peak",
-    "log_Newell",
-    "pressure_recent",
-    "south_hours",
+
+EXPECTED_V1_PROTOCOL_SHA256 = "7c2251d3fb3374c28707a1c5466b8142293360c158bf6557ce5c71f309fa4c79"
+EXPECTED_V110_PROTOCOL_SHA256 = "a423e8274f1149d3e3e0997d09fc87bad433a1cb93208741e5fda24ea7cc6bc9"
+EXPECTED_MODEL_SHA256 = "948b1ee4d176035e47f15e7708c9795dfc482fa739c6533a4b894c948c9fc5bd"
+EXPECTED_BOOTSTRAP_SHA256 = "f5c51d0a02b7ca4d17ae6f703c2f84d7b8a99b03190bdc0ba5702b91efb28027"
+EXPECTED_PRECEDENCE = [
+    "HOLD",
+    "PASS-SUPERIOR",
+    "PASS-NONINFERIOR",
+    "REJECT",
 ]
-EXPECTED_SECONDARY = ["V_Bs", "I_Q", "Burton_OBrien_McPherron"]
-FORBIDDEN_TRANSPORT = "SIR"
+EXPECTED_NONINFERIOR = [
+    "All 20 frozen events are SCORABLE.",
+    "Point relative improvement is strictly greater than -0.05.",
+    "The frozen-index bootstrap fraction with relative improvement strictly greater than -0.05 is at least 0.90.",
+    "Every leave-one-event-out relative improvement is strictly greater than -0.05.",
+]
+EXPECTED_SUPERIOR = [
+    "Every PASS-NONINFERIOR condition passes.",
+    "Point relative improvement is at least 0.05.",
+    "The frozen-index bootstrap fraction with relative improvement strictly greater than 0 is at least 0.90.",
+    "Every leave-one-event-out relative improvement is strictly greater than 0.",
+]
+EXPECTED_REJECT = (
+    "All 20 frozen events are SCORABLE and at least one PASS-NONINFERIOR "
+    "condition fails."
+)
+EXPECTED_HOLD = (
+    "Any incomplete cohort, non-SCORABLE event, zero Newell RMSE, missing "
+    "provenance, hash mismatch, chronology failure, catalog revision, "
+    "unauthorized target access, or other invariant violation."
+)
 
 
 def require(condition: bool, message: str) -> None:
@@ -25,122 +59,258 @@ def require(condition: bool, message: str) -> None:
         raise ValueError(message)
 
 
-def require_keys(value: dict[str, Any], keys: set[str], context: str) -> None:
-    missing = sorted(keys - value.keys())
-    require(not missing, f"{context} missing: {', '.join(missing)}")
-
-
-def load_protocol(path: Path) -> dict[str, Any]:
-    protocol = json.loads(path.read_text(encoding="utf-8"))
-    require(isinstance(protocol, dict), "protocol must be a JSON object")
-    validate_protocol(protocol)
-    return protocol
-
-
 def validate_protocol(protocol: dict[str, Any]) -> None:
-    require_keys(
-        protocol,
-        {
-            "protocol_id",
-            "protocol_version",
-            "status",
-            "claim_scope",
-            "freeze",
-            "cohort",
-            "sources",
-            "window",
-            "model",
-            "comparison",
-            "decision",
-            "data_quality",
-            "reproducibility",
-        },
-        "protocol",
+    require(protocol.get("protocol_id") == PROTOCOL_ID, "unexpected protocol_id")
+    require(
+        protocol.get("protocol_version") == PROTOCOL_VERSION,
+        "unexpected protocol_version",
     )
-    require(protocol["protocol_id"] == EXPECTED_PROTOCOL_ID, "unexpected protocol_id")
-    require(protocol["status"] == "FROZEN-PRE-TARGET", "protocol must be frozen pre-target")
+    require(protocol.get("status") == "FROZEN-PRE-TARGET", "protocol status")
+    require(
+        protocol.get("supersedes")
+        == {
+            "protocol_version": "1.1.0-prospective",
+            "status": "SUPERSEDED-BEFORE-ACCRUAL",
+            "freeze_commit": "3d93269a2ad6a080e4902fbd35097a238f003fc1",
+        },
+        "v1.1.0 supersession boundary changed",
+    )
 
     scope = protocol["claim_scope"]
-    require(FORBIDDEN_TRANSPORT in scope["transport_exclusions"], "SIR must be excluded")
-    forbidden = " ".join(scope["forbidden_inferences"])
-    require("PASS-SUPERIOR" in forbidden, "superiority boundary must be explicit")
-    require("new cohort" in forbidden, "superiority must require new-cohort evidence")
+    require(scope["primary_baseline"] == "Newell", "primary baseline changed")
+    require(scope["transport_exclusions"] == ["SIR"], "SIR exclusion changed")
+    require(
+        scope["secondary_descriptive_baselines"]
+        == ["V_Bs", "I_Q", "Burton_OBrien_McPherron"],
+        "secondary baseline policy changed",
+    )
 
     freeze = protocol["freeze"]
-    require(freeze["anchor_kind"] == "introducing_git_commit", "freeze must use Git commit")
-    require("strictly later" in freeze["prospective_boundary"], "boundary must be prospective")
-    require("new protocol version" in freeze["amendment_policy"], "amendments must restart accrual")
+    require(freeze["anchor_kind"] == "introducing_git_commit", "anchor kind")
+    require(freeze["repository"] == "Lacinnik/-tensor-architectonics", "repository")
+    require(freeze["path"] == PROTOCOL_PATH.as_posix(), "protocol path")
+    require(
+        "Current protocol bytes MUST equal" in freeze["resolution_rule"],
+        "anchor byte equality missing",
+    )
+    require(
+        "strictly later" in freeze["prospective_boundary"],
+        "prospective time boundary changed",
+    )
+    require(
+        "new protocol version" in freeze["amendment_policy"],
+        "amendment policy changed",
+    )
+
+    states = protocol["state_machine"]
+    require("Any broken invariant -> HOLD" in states["transitions"], "HOLD transition")
+    require("No accrued event" in states["rollback"], "rollback boundary")
 
     cohort = protocol["cohort"]
-    require(cohort["planned_events"] == 20, "cohort size must remain 20")
-    require(cohort["replacement_policy"] == "NONE", "event replacement must be forbidden")
-    require(cohort["accrual_state"] == "NOT_STARTED", "preregistration must contain no accrued events")
-    require("before any target source is queried" in cohort["manifest_freeze_rule"], "manifest must precede targets")
-    require(cohort["eligibility"]["sc_insitu"] == "Wind", "cohort must be near-Earth Wind")
-    require(cohort["eligibility"]["minimum_minutes_after_cutoff"] == 720, "target window minimum changed")
+    require(cohort["planned_events"] == 20, "cohort size changed")
+    require(cohort["replacement_policy"] == "NONE", "replacement policy")
+    require(cohort["initial_state"] == "NOT_STARTED", "initial accrual state")
+    require(
+        cohort["ordering"]
+        == ["icme_start_time ascending", "icmecat_id ascending"],
+        "cohort ordering changed",
+    )
+    require(
+        "Append selections only" in cohort["accrual_policy"],
+        "append-only accrual missing",
+    )
+    require(
+        "HOLD-CATALOG-REVISION" in cohort["catalog_revision_policy"],
+        "catalog revision guard missing",
+    )
+    require(cohort["eligibility"]["sc_insitu"] == "Wind", "spacecraft changed")
+    require(
+        cohort["eligibility"]["minimum_minutes_after_cutoff"] == 720,
+        "target window minimum changed",
+    )
 
     selector = protocol["sources"]["selector"]
-    require("{major}{minor}" in selector["machine_url_pattern"], "selector URL must be versioned")
-    require("highest officially linked ICMECAT version" in selector["version_policy"], "catalog version policy missing")
-    require(selector["allowlisted_columns"] == [
-        "icmecat_id", "sc_insitu", "icme_start_time", "mo_end_time"
-    ], "selector projection changed")
-    require(set(selector["target_columns_forbidden_during_accrual"]) == {"Dst", "SYM-H"}, "target ban changed")
-
+    require(selector["minimum_version"] == "2.3", "catalog minimum version")
+    require(
+        selector["allowlisted_columns"]
+        == ["icmecat_id", "sc_insitu", "icme_start_time", "mo_end_time"],
+        "selector allowlist changed",
+    )
+    require(
+        set(selector["target_columns_forbidden_in_manifest"]) == {"Dst", "SYM-H"},
+        "target ban changed",
+    )
+    require(
+        "ascending order" in selector["discovery_policy"],
+        "snapshot discovery order missing",
+    )
     target = protocol["sources"]["predictors_and_target"]
-    require(target["dataset_id"] == "OMNI_HRO_1MIN", "unexpected target dataset")
-    require(target["target_field"] == "SYM-H", "unexpected target field")
-    require("until the complete target-blind cohort manifest is frozen" in target["access_boundary"], "target access guard missing")
+    require(target["dataset_id"] == "OMNI_HRO_1MIN", "target dataset changed")
+    require(target["target_field"] == "SYM-H", "target field changed")
+    require(
+        "two ordered commits" in target["access_boundary"],
+        "two-commit target guard missing",
+    )
 
     window = protocol["window"]
-    require(window["cutoff_minutes_after_start"] == 720, "cutoff must remain 12 hours")
-    require(window["semantics"] == "half-open [start,end)", "window semantics changed")
+    require(window["semantics"] == "half-open [start,end)", "window semantics")
+    require(window["cutoff_minutes_after_start"] == 720, "cutoff changed")
+    require(window["target_window"] == "[cutoff, mo_end_time)", "target window")
 
     model = protocol["model"]
-    require(model["kind"] == "standardized_ridge", "model kind changed")
-    require(model["alpha"] == 10.0, "ridge alpha changed")
-    require(model["features"] == EXPECTED_FEATURES, "feature set or order changed")
-    require(len(model["source_commit"]) == 40, "model source_commit must be a full SHA")
-    require("Confirmatory target values must never affect fitting" in model["fit_policy"], "fit leakage guard missing")
+    require(model["fit_policy"] == "NEVER_REFIT", "model refit guard")
+    require(
+        model["source_commit"]
+        == "2da7de6df1ca0d3ff2a1a89576f078c97d389298",
+        "model source commit changed",
+    )
+    require(model["artifact_path"] == MODEL_PATH.as_posix(), "model path")
+    require(model["artifact_sha256"] == EXPECTED_MODEL_SHA256, "model hash")
+    require(model["eagc_alpha"] == 10.0, "ridge alpha")
+    require(
+        model["eagc_features"]
+        == ["pressure_peak", "log_Newell", "pressure_recent", "south_hours"],
+        "model features changed",
+    )
 
     comparison = protocol["comparison"]
-    require(comparison["primary_baseline"] == "Newell", "primary baseline changed")
-    require(comparison["secondary_descriptive_baselines"] == EXPECTED_SECONDARY, "secondary baseline policy changed")
-    require(comparison["bootstrap_replicates"] == 10000, "bootstrap count changed")
-    require(comparison["bootstrap_seed"] == 12012, "bootstrap seed changed")
-    require(comparison["noninferiority_margin_relative_rmse"] == -0.05, "noninferiority margin changed")
-    require(comparison["superiority_margin_relative_rmse"] == 0.05, "superiority margin changed")
-    require(comparison["minimum_bootstrap_probability"] == 0.9, "bootstrap threshold changed")
+    require(
+        comparison["relative_improvement_formula"]
+        == "(RMSE_Newell - RMSE_EAGC) / RMSE_Newell",
+        "relative improvement formula changed",
+    )
+    require(comparison["zero_baseline_rmse_policy"] == "HOLD", "zero RMSE policy")
+    require(comparison["bootstrap_replicates"] == 10000, "bootstrap count")
+    require(comparison["bootstrap_sample_size"] == 20, "bootstrap sample size")
+    require(
+        comparison["bootstrap_indices_sha256"] == EXPECTED_BOOTSTRAP_SHA256,
+        "bootstrap artifact hash",
+    )
+    require(
+        comparison["noninferiority_margin_relative_rmse"] == -0.05,
+        "noninferiority margin",
+    )
+    require(
+        comparison["superiority_margin_relative_rmse"] == 0.05,
+        "superiority margin",
+    )
+    require(comparison["minimum_bootstrap_probability"] == 0.9, "probability")
 
     decision = protocol["decision"]
-    require_keys(decision, {"PASS-NONINFERIOR", "PASS-SUPERIOR", "REJECT", "HOLD", "precedence"}, "decision")
-    require(decision["precedence"][0] == "HOLD", "HOLD must fail closed")
-    superior = " ".join(decision["PASS-SUPERIOR"])
-    require("at least 0.05" in superior, "superiority point margin missing")
-    require("greater than 0" in superior, "superiority resampling guards missing")
+    require(decision["PASS-NONINFERIOR"] == EXPECTED_NONINFERIOR, "NI decision")
+    require(decision["PASS-SUPERIOR"] == EXPECTED_SUPERIOR, "superior decision")
+    require(decision["REJECT"] == EXPECTED_REJECT, "REJECT decision")
+    require(decision["HOLD"] == EXPECTED_HOLD, "HOLD decision")
+    require(decision["precedence"] == EXPECTED_PRECEDENCE, "decision precedence")
 
     quality = protocol["data_quality"]
-    require(quality["failure_policy"].startswith("Fail closed to HOLD"), "quality must fail closed")
-    require(quality["minimum_prefix_coverage"] == 0.75, "prefix coverage changed")
-    require(quality["minimum_target_symh_coverage"] == 0.9, "target coverage changed")
-    require(quality["maximum_gap_minutes"] == 15, "gap limit changed")
+    require(
+        quality["required_prefix_fields"]
+        == ["by", "bz", "speed", "pressure", "symh"],
+        "quality fields changed",
+    )
+    require(quality["minimum_prefix_coverage"] == 0.75, "prefix coverage")
+    require(quality["minimum_target_symh_coverage"] == 0.9, "target coverage")
+    require(quality["maximum_gap_minutes"] == 15, "gap threshold")
+    require(
+        protocol["reproducibility"]["python"] == "3.12.14",
+        "Python runtime changed",
+    )
 
-    reproducibility = protocol["reproducibility"]
-    require(reproducibility["python"] == "3.12", "Python version must be fixed")
-    require(len(reproducibility["required_artifacts"]) >= 6, "reproducibility artifact plan incomplete")
-    require("manifest commit predates target retrieval" in reproducibility["runner_guard"], "runner chronology guard missing")
+
+def validate_registry(registry: dict[str, Any]) -> None:
+    active = registry["active_protocol"]
+    require(active["protocol_id"] == PROTOCOL_ID, "registry protocol_id")
+    require(active["protocol_version"] == PROTOCOL_VERSION, "registry version")
+    require(active["path"] == PROTOCOL_PATH.as_posix(), "registry active path")
+    require(active["status"] == "FROZEN-PRE-TARGET", "registry active status")
+    versions = {item["protocol_version"]: item for item in registry["versions"]}
+    require(
+        versions["1.0.0-prospective"]["status"]
+        == "SUPERSEDED-BEFORE-ACCRUAL",
+        "v1 registry status",
+    )
+    require(
+        versions["1.1.0-prospective"]["status"]
+        == "SUPERSEDED-BEFORE-ACCRUAL",
+        "v1.1.0 registry status",
+    )
+    require(
+        versions["1.1.0-prospective"]["superseded_by"] == PROTOCOL_VERSION,
+        "v1.1.0 supersession target",
+    )
+    require(
+        versions[PROTOCOL_VERSION]["accrual_state"] == "NOT_STARTED",
+        "v1.1.1 accrual state",
+    )
+
+
+def validate_artifacts(root: Path, protocol: dict[str, Any]) -> None:
+    require(
+        sha256_file(root / REGISTRY_PATH)
+        == protocol["reproducibility"]["registry_sha256"],
+        "registry bytes",
+    )
+    require(
+        sha256_file(root / "tools/eagc012/confirmatory_icme_protocol.json")
+        == EXPECTED_V1_PROTOCOL_SHA256,
+        "v1 frozen protocol changed",
+    )
+    require(
+        sha256_file(root / "tools/eagc012/confirmatory_icme_protocol_v1.1.0.json")
+        == EXPECTED_V110_PROTOCOL_SHA256,
+        "v1.1.0 frozen protocol changed",
+    )
+    require(sha256_file(root / MODEL_PATH) == EXPECTED_MODEL_SHA256, "model artifact")
+    require(
+        sha256_file(root / BOOTSTRAP_PATH) == EXPECTED_BOOTSTRAP_SHA256,
+        "bootstrap artifact",
+    )
+    model = json.loads((root / MODEL_PATH).read_text(encoding="utf-8"))
+    require(model["status"] == "FROZEN-PRE-TARGET", "model status")
+    require(model["fit_policy"].startswith("Parameters are immutable"), "model fit policy")
+    require(model["training_cohort"]["event_count"] == 80, "training event count")
+    require(len(model["training_cohort"]["source_files"]) == 66, "training source hashes")
+    required_implementation = {
+        "tools/eagc012/confirmatory_common.py",
+        "tools/eagc012/accrue_confirmatory_cohort.py",
+        "tools/eagc012/authorize_confirmatory_target.py",
+        "tools/eagc012/prepare_confirmatory_data.py",
+        "tools/eagc012/score_confirmatory_cohort.py",
+        "tools/eagc012/validate_confirmatory_protocol.py",
+        "tools/eagc012/run_gate.py",
+        ".github/workflows/eagc012-field-gate.yml",
+    }
+    require(
+        set(protocol["reproducibility"]["implementation_sha256"])
+        == required_implementation,
+        "implementation hash inventory",
+    )
+    for path, expected in protocol["reproducibility"]["implementation_sha256"].items():
+        require(sha256_file(root / path) == expected, f"implementation drift: {path}")
+
+
+def load_and_validate(root: Path, *, verify_git: bool = True) -> dict[str, Any]:
+    protocol = json.loads((root / PROTOCOL_PATH).read_text(encoding="utf-8"))
+    registry = json.loads((root / REGISTRY_PATH).read_text(encoding="utf-8"))
+    validate_protocol(protocol)
+    validate_registry(registry)
+    validate_artifacts(root, protocol)
+    if verify_git:
+        anchor = verify_protocol_anchor(root)
+        require(
+            anchor["protocol_sha256"] == sha256_file(root / PROTOCOL_PATH),
+            "Git anchor hash",
+        )
+    return protocol
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "path",
-        nargs="?",
-        type=Path,
-        default=Path(__file__).with_name("confirmatory_icme_protocol.json"),
-    )
+    parser.add_argument("--no-git-anchor", action="store_true")
     args = parser.parse_args()
-    protocol = load_protocol(args.path)
+    root = repository_root(Path(__file__).parent)
+    protocol = load_and_validate(root, verify_git=not args.no_git_anchor)
     print(f"READY-TO-ACCRUE {protocol['protocol_id']} {protocol['protocol_version']}")
 
 

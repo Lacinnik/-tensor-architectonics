@@ -1,51 +1,108 @@
-# EAGC-012 confirmatory ICME protocol v1.0
+# EAGC-012 confirmatory ICME protocol v1.1.1
 
-This package preregisters a strictly prospective, near-Earth ICME confirmation after the retrospective EAGC-012 adjudication. It is **ready to accrue**, not ready to score: no post-freeze event and no new target value is present in this pull request.
+Versions `1.0.0-prospective` and `1.1.0-prospective` are preserved unchanged
+and registered as `SUPERSEDED-BEFORE-ACCRUAL`. The active contract is
+`TZAR-RESEARCH-EAGC-012-CONFIRMATORY-ICME` `1.1.1-prospective`.
+
+The protocol is ready only for target-blind accrual. It is not ready to query
+selected OMNI windows or score a claim until the required commits exist.
 
 ## Immutable boundary
 
-The protocol freeze is the first Git commit containing `TZAR-RESEARCH-EAGC-012-CONFIRMATORY-ICME` version `1.0.0-prospective` at `tools/eagc012/confirmatory_icme_protocol.json`. Only Wind ICMEs whose event start and catalog-snapshot retrieval are strictly later than that commit timestamp can enter the cohort.
+The freeze anchor is resolved from Git history: the earliest commit containing
+the v1.1.1 protocol ID and version at
+`tools/eagc012/confirmatory_icme_protocol_v1.1.1.json`. Validation requires the
+current protocol bytes to equal the bytes at that commit. Manual freeze SHA or
+timestamp input is not accepted.
 
-Any material amendment creates a new version and restarts prospective accrual after the new introducing commit. Editing this version cannot rescue an observed result.
+Any material amendment requires another version and another prospective
+cohort. The v1.1 model parameters, training-source hashes, bootstrap index
+matrix, decision inequalities and implementation hashes are frozen artifacts.
+The runtime inventory includes `run_gate.py`, the validator and the field-gate
+workflow. Every operational entry point validates the complete inventory before
+catalog or target-source access.
+
+## State transitions
+
+1. `FROZEN-PRE-TARGET → OPEN-ACCRUAL`: validate protocol and Git anchor.
+2. `OPEN-ACCRUAL → MANIFEST-CANDIDATE`: process official ICMECAT versions in
+   ascending order and append exactly 20 eligible events.
+3. Commit the exact manifest.
+4. Generate `TARGET-AUTHORIZATION-CANDIDATE` from that committed manifest.
+5. Commit the exact authorization in a later descendant commit.
+6. Only then may the data preparer request selected OMNI windows.
+7. Score with the frozen model and bootstrap matrix; never refit.
+
+Any broken provenance, chronology, source, catalog, data-quality, model or
+decision invariant yields `HOLD`.
 
 ## Target-blind accrual
 
-Use the highest officially linked HELIO4CAST ICMECAT version (minimum 2.3) only through the four-column projection `icmecat_id`, `sc_insitu`, `icme_start_time`, and `mo_end_time`. Select the first 20 eligible Wind rows in deterministic chronological order. Freeze the complete event manifest, exact versioned source URL, source snapshot hash, projection hash, and retrieval timestamps in an earlier commit before requesting OMNI data for any selected window.
+```bash
+python tools/eagc012/accrue_confirmatory_cohort.py \
+  --output tools/eagc012/frozen/confirmatory-icme-v1.1.1-events.json
+```
 
-Selected events are never replaced. Missing or late target data yield `HOLD`; they do not cause a more favorable event to be substituted.
+The runner reads the official landing page, obtains exact versioned URLs,
+rechecks previously processed source hashes and processes every unprocessed
+version in semantic order. Only `icmecat_id`, `sc_insitu`, `icme_start_time`
+and `mo_end_time` enter the manifest.
 
-## Frozen analysis
+Each first-seen post-freeze Wind row receives a permanent decision. Previously
+selected or skipped rows cannot change. A catalog correction produces
+`HOLD-CATALOG-REVISION`; changed bytes at the same versioned URL produce
+`HOLD-SOURCE-MUTATION`. Every non-initial accrual run requires the previous
+manifest bytes to exist in Git history and records that parent evidence. Before
+authorization, the complete manifest is schema-checked, rejected if it contains
+target fields, and replayed from every recorded official target-blind snapshot.
 
-- Cutoff: 12 hours after `icme_start_time`.
-- Target: minimum SYM-H in `[cutoff, mo_end_time)`.
-- EAGC: standardized ridge, alpha 10, features `pressure_peak`, `log_Newell`, `pressure_recent`, and `south_hours`.
-- Training: the 80 previously disclosed ICME development events only.
-- Primary baseline: Newell.
-- Secondary descriptive controls: V·Bs, I(Q), and Burton–O'Brien–McPherron.
+## Target authorization
 
-`PASS-NONINFERIOR` uses the preregistered 5% relative-RMSE margin, paired event bootstrap probability of at least 0.90, and a leave-one-event-out worst case inside the same margin. `PASS-SUPERIOR` additionally requires at least 5% point improvement, bootstrap probability of positive improvement of at least 0.90, and no leave-one-event-out reversal. Otherwise a complete cohort is `REJECT`; incomplete data or broken provenance are `HOLD`.
+After the complete manifest has been committed:
 
-No result is transferable to SIR. The previously observed SIR result remains `TRANSPORT-REJECT` and is outside this confirmatory claim.
+```bash
+python tools/eagc012/authorize_confirmatory_target.py
+git add tools/eagc012/frozen/confirmatory-icme-v1.1.1-target-authorization.json
+git commit
+```
+
+The authorization file is inert while uncommitted. The data preparer proves
+that the manifest commit is an ancestor of the later authorization commit
+before making its first OMNI request. The scorer repeats that proof, requires
+canonical OMNI receipts, verifies every raw source file, and recomputes the
+event summaries before adjudication.
+
+## Data preparation and scoring
+
+```bash
+python tools/eagc012/prepare_confirmatory_data.py \
+  --output artifacts/eagc012/confirmatory-v1.1.1-event-summary.json
+
+python tools/eagc012/score_confirmatory_cohort.py \
+  artifacts/eagc012/confirmatory-v1.1.1-event-summary.json \
+  --output artifacts/eagc012/confirmatory-v1.1.1-adjudication.json
+```
+
+The fixed primary statistic is
+
+`(RMSE_Newell - RMSE_EAGC) / RMSE_Newell`.
+
+`PASS-NONINFERIOR` requires a point value strictly greater than `-0.05`, a
+frozen-index bootstrap probability of at least `0.90` for values strictly
+greater than `-0.05`, and every leave-one-event-out value strictly greater than
+`-0.05`.
+
+`PASS-SUPERIOR` additionally requires point improvement at least `0.05`,
+bootstrap probability at least `0.90` for improvement strictly greater than
+zero, and no leave-one-event-out value at or below zero. Otherwise a complete,
+provenance-valid cohort is `REJECT`; incomplete or invalid evidence is `HOLD`.
 
 ## Verification
 
 ```bash
+python -m unittest discover -s tools/eagc012 -p 'test_*.py'
 python tools/eagc012/validate_confirmatory_protocol.py
-python -m unittest discover -s tools/eagc012 -p 'test_confirmatory_protocol.py'
 ```
 
-The validator fails closed on target access before manifest freeze, event replacement, SIR transfer, model drift, relaxed superiority criteria, or incomplete reproducibility requirements.
-
-When a new official ICMECAT snapshot appears, build the target-blind candidate manifest without retaining any non-allowlisted column:
-
-```bash
-python tools/eagc012/accrue_confirmatory_cohort.py ICMECAT.csv \
-  --source-url <exact-versioned-url> \
-  --source-version <version> \
-  --retrieved-at <UTC> \
-  --freeze-commit <introducing-commit> \
-  --freeze-committed-at <UTC> \
-  --output tools/eagc012/frozen/confirmatory-icme-v1-events.json
-```
-
-Even a complete candidate manifest keeps `target_access_permitted: false`; target retrieval is a later, separately committed step.
+The second command requires full Git history. CI checks out with
+`fetch-depth: 0` and runs on both pull requests and pushes to `main`.

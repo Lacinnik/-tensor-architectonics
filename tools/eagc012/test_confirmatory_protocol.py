@@ -5,104 +5,400 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from accrue_confirmatory_cohort import build_manifest
-from validate_confirmatory_protocol import load_protocol, validate_protocol
+from accrue_confirmatory_cohort import (
+    apply_snapshot,
+    discovery_conflicts,
+    discover_official_snapshots,
+    official_url,
+    version_from_url,
+)
+from authorize_confirmatory_target import build_authorization
+from confirmatory_common import MANIFEST_PATH, PROTOCOL_ID, PROTOCOL_VERSION, iso
+from prepare_confirmatory_data import validate_authorization
+from score_confirmatory_cohort import (
+    adjudicate_metrics,
+    load_bootstrap_indices,
+    score_summary,
+)
+from validate_confirmatory_protocol import (
+    load_and_validate,
+    validate_artifacts,
+    validate_protocol,
+    validate_registry,
+)
 
 
-PROTOCOL_PATH = Path(__file__).with_name("confirmatory_icme_protocol.json")
+ROOT = Path(__file__).resolve().parents[2]
+PROTOCOL_PATH = ROOT / "tools/eagc012/confirmatory_icme_protocol_v1.1.1.json"
+REGISTRY_PATH = ROOT / "tools/eagc012/confirmatory_protocol_registry.json"
 
 
-class ConfirmatoryProtocolTests(unittest.TestCase):
+def freeze() -> dict[str, str]:
+    return {
+        "commit": "a" * 40,
+        "committed_at": "2026-09-18T20:00:00Z",
+        "protocol_sha256": "b" * 64,
+    }
+
+
+def catalog(rows: list[tuple[str, str, str]]) -> bytes:
+    lines = ["icmecat_id,sc_insitu,icme_start_time,mo_end_time,Dst,SYM-H"]
+    lines.extend(
+        f"{identifier},Wind,{start},{end},-999,-999"
+        for identifier, start, end in rows
+    )
+    return ("\n".join(lines) + "\n").encode()
+
+
+def event_rows(start_index: int, stop_index: int) -> list[tuple[str, str, str]]:
+    frozen = datetime(2026, 9, 18, 20, 0, tzinfo=timezone.utc)
+    rows = []
+    for index in range(start_index, stop_index):
+        start = frozen + timedelta(days=index * 2)
+        end = start + timedelta(hours=30)
+        rows.append(
+            (
+                f"W{index:02d}",
+                start.strftime("%Y-%m-%dT%H:%MZ"),
+                end.strftime("%Y-%m-%dT%H:%MZ"),
+            )
+        )
+    return rows
+
+
+class ProtocolTests(unittest.TestCase):
     def setUp(self) -> None:
         self.protocol = json.loads(PROTOCOL_PATH.read_text(encoding="utf-8"))
+        self.registry = json.loads(REGISTRY_PATH.read_text(encoding="utf-8"))
 
-    def test_frozen_protocol_is_ready_to_accrue(self) -> None:
-        validate_protocol(self.protocol)
+    def test_protocol_and_frozen_artifacts_validate(self) -> None:
+        load_and_validate(ROOT, verify_git=False)
 
-    def test_target_access_before_manifest_freeze_fails(self) -> None:
+    def test_protocol_version_drift_fails(self) -> None:
         changed = copy.deepcopy(self.protocol)
-        changed["sources"]["predictors_and_target"]["access_boundary"] = "Query OMNI immediately."
-        with self.assertRaisesRegex(ValueError, "target access guard"):
+        changed["protocol_version"] = "1.1.2-prospective"
+        with self.assertRaisesRegex(ValueError, "protocol_version"):
             validate_protocol(changed)
 
-    def test_event_replacement_fails(self) -> None:
+    def test_empty_noninferiority_contract_fails(self) -> None:
         changed = copy.deepcopy(self.protocol)
-        changed["cohort"]["replacement_policy"] = "REPLACE_FAILED"
-        with self.assertRaisesRegex(ValueError, "replacement"):
+        changed["decision"]["PASS-NONINFERIOR"] = []
+        with self.assertRaisesRegex(ValueError, "NI decision"):
             validate_protocol(changed)
 
-    def test_sir_transfer_fails(self) -> None:
+    def test_reject_or_hold_drift_fails(self) -> None:
+        for key in ("REJECT", "HOLD"):
+            changed = copy.deepcopy(self.protocol)
+            changed["decision"][key] = "always pass"
+            with self.assertRaisesRegex(ValueError, key):
+                validate_protocol(changed)
+
+    def test_model_source_commit_drift_fails(self) -> None:
         changed = copy.deepcopy(self.protocol)
-        changed["claim_scope"]["transport_exclusions"] = []
-        with self.assertRaisesRegex(ValueError, "SIR"):
+        changed["model"]["source_commit"] = "f" * 40
+        with self.assertRaisesRegex(ValueError, "model source commit"):
             validate_protocol(changed)
 
-    def test_superiority_margin_relaxation_fails(self) -> None:
+    def test_runtime_dependency_drift_fails(self) -> None:
         changed = copy.deepcopy(self.protocol)
-        changed["comparison"]["superiority_margin_relative_rmse"] = 0.0
-        with self.assertRaisesRegex(ValueError, "superiority margin"):
-            validate_protocol(changed)
+        changed["reproducibility"]["implementation_sha256"][
+            "tools/eagc012/run_gate.py"
+        ] = "0" * 64
+        with self.assertRaisesRegex(ValueError, "implementation drift: tools/eagc012/run_gate.py"):
+            validate_artifacts(ROOT, changed)
 
-    def test_model_or_feature_drift_fails(self) -> None:
-        changed = copy.deepcopy(self.protocol)
-        changed["model"]["features"].append("target_leak")
-        with self.assertRaisesRegex(ValueError, "feature set"):
-            validate_protocol(changed)
+    def test_registry_cannot_reactivate_v1(self) -> None:
+        changed = copy.deepcopy(self.registry)
+        changed["versions"][0]["status"] = "READY-TO-ACCRUE"
+        with self.assertRaisesRegex(ValueError, "v1 registry status"):
+            validate_registry(changed)
 
-    def test_protocol_file_loader_rejects_unfrozen_state(self) -> None:
-        changed = copy.deepcopy(self.protocol)
-        changed["status"] = "DRAFT"
-        with tempfile.TemporaryDirectory() as temporary:
-            path = Path(temporary) / "protocol.json"
-            path.write_text(json.dumps(changed), encoding="utf-8")
-            with self.assertRaisesRegex(ValueError, "frozen pre-target"):
-                load_protocol(path)
 
-    def test_manifest_builder_is_target_blind_and_deterministic(self) -> None:
-        frozen = datetime(2026, 9, 18, 20, 0, tzinfo=timezone.utc)
-        rows = ["icmecat_id,sc_insitu,icme_start_time,mo_end_time,Dst,SYM-H"]
-        for index in range(21, 0, -1):
-            start = frozen + timedelta(days=index * 2)
-            end = start + timedelta(hours=30)
-            rows.append(
-                f"W{index:02d},Wind,{start:%Y-%m-%dT%H:%MZ},{end:%Y-%m-%dT%H:%MZ},-999,-999"
+class AccrualTests(unittest.TestCase):
+    def test_discovery_orders_official_versions(self) -> None:
+        html = (
+            '<a href="/static/sync/icmecat/HELIO4CAST_ICMECAT_v24.csv">2.4</a>'
+            '<a href="https://helioforecast.space/static/sync/icmecat/'
+            'HELIO4CAST_ICMECAT_v23.csv">2.3</a>'
+        )
+        self.assertEqual(
+            discover_official_snapshots(html),
+            [("2.3", official_url("2.3")), ("2.4", official_url("2.4"))],
+        )
+
+    def test_version_url_round_trip_supports_multi_digit_minor(self) -> None:
+        self.assertEqual(version_from_url(official_url("2.10")), "2.10")
+
+    def test_source_url_version_mismatch_fails(self) -> None:
+        with self.assertRaisesRegex(ValueError, "exactly match"):
+            apply_snapshot(
+                None,
+                raw=catalog(event_rows(1, 2)),
+                source_url=official_url("2.4"),
+                source_version="2.3",
+                retrieved_at="2026-09-19T00:00:00Z",
+                freeze=freeze(),
             )
-        rows.append("S01,STEREO-A,2026-12-01T00:00Z,2026-12-02T06:00Z,-999,-999")
-        with tempfile.TemporaryDirectory() as temporary:
-            path = Path(temporary) / "catalog.csv"
-            path.write_text("\n".join(rows) + "\n", encoding="utf-8")
-            manifest = build_manifest(
-                path,
-                source_url="https://helioforecast.space/static/sync/icmecat/HELIO4CAST_ICMECAT_v24.csv",
-                source_version="2.4",
-                retrieved_at="2026-12-31T00:00:00Z",
-                freeze_commit="a" * 40,
-                freeze_committed_at="2026-09-18T20:00:00Z",
-            )
-        self.assertEqual(manifest["state"], "FROZEN-CANDIDATE")
-        self.assertFalse(manifest["target_access_permitted"])
-        self.assertEqual(manifest["selected_event_count"], 20)
-        self.assertEqual(manifest["selected_events"][0]["icmecat_id"], "W01")
-        self.assertNotIn("Dst", json.dumps(manifest))
-        self.assertNotIn("SYM-H", json.dumps(manifest))
 
-    def test_manifest_builder_requires_post_freeze_snapshot(self) -> None:
-        with tempfile.TemporaryDirectory() as temporary:
-            path = Path(temporary) / "catalog.csv"
-            path.write_text(
-                "icmecat_id,sc_insitu,icme_start_time,mo_end_time\n"
-                "W01,Wind,2026-09-20T00:00Z,2026-09-21T06:00Z\n",
-                encoding="utf-8",
+    def test_accrual_is_append_only_across_snapshots(self) -> None:
+        first = apply_snapshot(
+            None,
+            raw=catalog(event_rows(1, 11)),
+            source_url=official_url("2.3"),
+            source_version="2.3",
+            retrieved_at="2026-09-19T00:00:00Z",
+            freeze=freeze(),
+        )
+        original = copy.deepcopy(first["selected_events"])
+        second = apply_snapshot(
+            first,
+            raw=catalog(event_rows(1, 24)),
+            source_url=official_url("2.4"),
+            source_version="2.4",
+            retrieved_at="2026-10-01T00:00:00Z",
+            freeze=freeze(),
+        )
+        self.assertEqual(second["state"], "MANIFEST-CANDIDATE")
+        self.assertEqual(second["selected_events"][:10], original)
+        self.assertEqual(second["selected_event_count"], 20)
+        rendered = json.dumps(second)
+        self.assertNotIn("Dst", rendered)
+        self.assertNotIn("SYM-H", rendered)
+
+    def test_catalog_revision_enters_hold(self) -> None:
+        first = apply_snapshot(
+            None,
+            raw=catalog(event_rows(1, 3)),
+            source_url=official_url("2.3"),
+            source_version="2.3",
+            retrieved_at="2026-09-19T00:00:00Z",
+            freeze=freeze(),
+        )
+        revised = event_rows(1, 3)
+        revised[0] = (revised[0][0], "2026-09-21T21:00Z", revised[0][2])
+        second = apply_snapshot(
+            first,
+            raw=catalog(revised),
+            source_url=official_url("2.4"),
+            source_version="2.4",
+            retrieved_at="2026-10-01T00:00:00Z",
+            freeze=freeze(),
+        )
+        self.assertEqual(second["state"], "HOLD-CATALOG-REVISION")
+
+    def test_catalog_row_deletion_enters_hold(self) -> None:
+        first = apply_snapshot(
+            None,
+            raw=catalog(event_rows(1, 4)),
+            source_url=official_url("2.3"),
+            source_version="2.3",
+            retrieved_at="2026-09-19T00:00:00Z",
+            freeze=freeze(),
+        )
+        second = apply_snapshot(
+            first,
+            raw=catalog(event_rows(2, 4)),
+            source_url=official_url("2.4"),
+            source_version="2.4",
+            retrieved_at="2026-10-01T00:00:00Z",
+            freeze=freeze(),
+        )
+        self.assertEqual(second["state"], "HOLD-CATALOG-REVISION")
+        self.assertIn("disappeared", second["hold_reasons"][0])
+
+    def test_mutated_versioned_source_enters_hold(self) -> None:
+        first = apply_snapshot(
+            None,
+            raw=catalog(event_rows(1, 3)),
+            source_url=official_url("2.3"),
+            source_version="2.3",
+            retrieved_at="2026-09-19T00:00:00Z",
+            freeze=freeze(),
+        )
+        second = apply_snapshot(
+            first,
+            raw=catalog(event_rows(1, 4)),
+            source_url=official_url("2.3"),
+            source_version="2.3",
+            retrieved_at="2026-09-20T00:00:00Z",
+            freeze=freeze(),
+        )
+        self.assertEqual(second["state"], "HOLD-SOURCE-MUTATION")
+
+    def test_pre_freeze_snapshot_fails(self) -> None:
+        with self.assertRaisesRegex(ValueError, "after protocol freeze"):
+            apply_snapshot(
+                None,
+                raw=catalog(event_rows(1, 2)),
+                source_url=official_url("2.3"),
+                source_version="2.3",
+                retrieved_at="2026-09-18T20:00:00Z",
+                freeze=freeze(),
             )
-            with self.assertRaisesRegex(ValueError, "strictly after"):
-                build_manifest(
-                    path,
-                    source_url="https://helioforecast.space/static/sync/icmecat/HELIO4CAST_ICMECAT_v24.csv",
-                    source_version="2.4",
-                    retrieved_at="2026-09-18T20:00:00Z",
-                    freeze_commit="a" * 40,
-                    freeze_committed_at="2026-09-18T20:00:00Z",
-                )
+
+    def test_disappeared_processed_snapshot_is_a_conflict(self) -> None:
+        previous = apply_snapshot(
+            None,
+            raw=catalog(event_rows(1, 3)),
+            source_url=official_url("2.3"),
+            source_version="2.3",
+            retrieved_at="2026-09-19T00:00:00Z",
+            freeze=freeze(),
+        )
+        missing, inserted = discovery_conflicts(
+            previous, [("2.4", official_url("2.4"))]
+        )
+        self.assertEqual(missing, ["2.3"])
+        self.assertEqual(inserted, [])
+
+
+class AuthorizationAndScoringTests(unittest.TestCase):
+    def complete_manifest(self) -> dict:
+        return apply_snapshot(
+            None,
+            raw=catalog(event_rows(1, 22)),
+            source_url=official_url("2.3"),
+            source_version="2.3",
+            retrieved_at="2026-12-31T00:00:00Z",
+            freeze=freeze(),
+        )
+
+    def test_authorization_requires_complete_manifest(self) -> None:
+        incomplete = apply_snapshot(
+            None,
+            raw=catalog(event_rows(1, 3)),
+            source_url=official_url("2.3"),
+            source_version="2.3",
+            retrieved_at="2026-09-19T00:00:00Z",
+            freeze=freeze(),
+        )
+        with self.assertRaisesRegex(ValueError, "not complete"):
+            build_authorization(
+                incomplete,
+                manifest_path=MANIFEST_PATH,
+                manifest_evidence={
+                    "sha256": "c" * 64,
+                    "commit": "d" * 40,
+                    "committed_at": "2026-12-31T01:00:00Z",
+                },
+                protocol_anchor=freeze(),
+            )
+
+    def test_authorization_is_inert_until_committed(self) -> None:
+        authorization = build_authorization(
+            self.complete_manifest(),
+            manifest_path=MANIFEST_PATH,
+            manifest_evidence={
+                "sha256": "c" * 64,
+                "commit": "d" * 40,
+                "committed_at": "2026-12-31T01:00:00Z",
+            },
+            protocol_anchor=freeze(),
+        )
+        self.assertFalse(authorization["target_access_permitted"])
+        validate_authorization(
+            authorization,
+            manifest_hash="c" * 64,
+            protocol_anchor=freeze(),
+            authorization_evidence={
+                "sha256": "e" * 64,
+                "commit": "f" * 40,
+                "committed_at": iso(datetime.now(timezone.utc) - timedelta(hours=1)),
+            },
+        )
+
+    def test_manifest_with_target_field_cannot_be_authorized(self) -> None:
+        manifest = self.complete_manifest()
+        manifest["selected_events"][0]["SYM-H"] = -999
+        with self.assertRaisesRegex(ValueError, "forbidden target field"):
+            build_authorization(
+                manifest,
+                manifest_path=MANIFEST_PATH,
+                manifest_evidence={
+                    "sha256": "c" * 64,
+                    "commit": "d" * 40,
+                    "committed_at": "2026-12-31T01:00:00Z",
+                },
+                protocol_anchor=freeze(),
+            )
+
+    def test_forged_summary_fails_closed(self) -> None:
+        manifest = self.complete_manifest()
+        authorization = build_authorization(
+            manifest,
+            manifest_path=MANIFEST_PATH,
+            manifest_evidence={
+                "sha256": "c" * 64,
+                "commit": "d" * 40,
+                "committed_at": "2026-12-31T01:00:00Z",
+            },
+            protocol_anchor=freeze(),
+        )
+        summary = {
+            "protocol_id": PROTOCOL_ID,
+            "protocol_version": PROTOCOL_VERSION,
+            "manifest_sha256": "c" * 64,
+            "authorization_sha256": "e" * 64,
+            "source_files": {
+                "fake": {
+                    "sha256": "f" * 64,
+                    "retrieved_at": "2027-01-01T00:00:00Z",
+                    "url": "https://example.invalid/not-omni",
+                }
+            },
+            "events": [
+                {"event_id": item["icmecat_id"]}
+                for item in manifest["selected_events"]
+            ],
+        }
+        result = score_summary(summary, manifest, authorization, {}, [])
+        self.assertEqual(result["decision"], "HOLD")
+        self.assertIn("target source URL is not canonical", result["hold_reasons"])
+
+    def test_decision_thresholds_are_exact(self) -> None:
+        self.assertEqual(
+            adjudicate_metrics(
+                point=-0.05,
+                probability_noninferior=1.0,
+                probability_superior=1.0,
+                omitted=[-0.049] * 20,
+            ),
+            "REJECT",
+        )
+        self.assertEqual(
+            adjudicate_metrics(
+                point=0.0,
+                probability_noninferior=0.90,
+                probability_superior=0.89,
+                omitted=[-0.01] * 20,
+            ),
+            "PASS-NONINFERIOR",
+        )
+        self.assertEqual(
+            adjudicate_metrics(
+                point=0.05,
+                probability_noninferior=0.90,
+                probability_superior=0.90,
+                omitted=[0.001] * 20,
+            ),
+            "PASS-SUPERIOR",
+        )
+        self.assertEqual(
+            adjudicate_metrics(
+                point=0.05,
+                probability_noninferior=0.90,
+                probability_superior=0.90,
+                omitted=[0.0] + [0.01] * 19,
+            ),
+            "PASS-NONINFERIOR",
+        )
+
+    def test_bootstrap_matrix_shape_and_bounds(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "indices.bin"
+            path.write_bytes(bytes([0, 1, 1, 0]))
+            rows = load_bootstrap_indices(path, 2, 2)
+        self.assertEqual(rows, [bytes([0, 1]), bytes([1, 0])])
 
 
 if __name__ == "__main__":
