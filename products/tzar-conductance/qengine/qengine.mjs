@@ -1,11 +1,12 @@
 export const QENGINE_SCHEMA = "tzar.qengine-result/0.1.0-rc.1";
-export const QENGINE_VERSION = "0.1.0-rc.1";
+export const QENGINE_VERSION = "0.1.0-rc.2";
 export const ENGINE_IDS = ["QP-01", "QR-01", "QG-01", "QA-01", "QC-01", "QI-01"];
 export const GEOMETRIES = ["Gᴱ", "Gᴸ", "Gᴿ", "Gᴾ", "Gˢ"];
 const REPRESENTATION_PROFILES = ["encrypted-envelope", "local-projection", "network-payload", "visual-rendering", "audio-rendering"];
 const defaultNonceStore = new Set();
 
-const present = value => value !== undefined && value !== null && value !== "";
+const present = value => value !== undefined && value !== null && (typeof value !== "string" || value.trim() !== "");
+const nonnegative = value => Number.isFinite(value) && value >= 0;
 const list = value => Array.isArray(value) ? value : [];
 const normalizedMetrics = metrics => {
   const keys = ["alpha", "iy", "cm", "q", "t"];
@@ -60,7 +61,8 @@ function runResonance(request, context, policy, meta) {
   const criteria = list(request.criteria); const metrics = normalizedMetrics(request.metrics);
   if (!present(request.subjectStructure) || !present(request.fieldStructure) || !present(request.point) || !present(request.geometry) || !criteria.length || !metrics) return closed(meta, "RESONANCE_CRITERIA_MISSING", "contract", "Для оценки нужны явно предъявленные структуры, Точка, геометрия, критерии и пять метрик.");
   if (request.profile && !list(policy.allowedProfiles).includes(request.profile)) return closed(meta, "RESONANCE_PROFILE_UNSUPPORTED", "policy", "Профиль Az / Бука / TX не разрешён явной политикой.");
-  if (Number(request.requiredLoad) > Number(policy.containerCapacity)) return closed(meta, "RESONANCE_OVERLOAD", "policy", "Заявленная нагрузка превышает ёмкость контейнера.");
+  if (request.requiredLoad !== undefined && (!nonnegative(request.requiredLoad) || !nonnegative(policy.containerCapacity))) return closed(meta, "RESONANCE_CAPACITY_INVALID", "contract", "Для заявленной нагрузки нужны конечные неотрицательные нагрузка и ёмкость.");
+  if (request.requiredLoad > policy.containerCapacity) return closed(meta, "RESONANCE_OVERLOAD", "policy", "Заявленная нагрузка превышает ёмкость контейнера.");
   const matches = criteria.filter(item => item && item.match === true).length;
   const ratio = matches / criteria.length; const threshold = Number.isFinite(policy.minimumMatch) ? policy.minimumMatch : 1;
   if (request.claimedResonance === true && ratio < threshold) return closed(meta, "RESONANCE_FALSE_POSITIVE", "invariant", "Резонанс заявлен при недостаточном явном совпадении критериев.", { invariantVerdict:"review" });
@@ -70,7 +72,9 @@ function runResonance(request, context, policy, meta) {
 function runGeometry(request, context, policy, meta) {
   if (!GEOMETRIES.includes(request.sourceGeometry) || !GEOMETRIES.includes(request.targetGeometry) || !REPRESENTATION_PROFILES.includes(request.representationProfile)) return closed(meta, "GEOMETRY_OPERATION_UNSUPPORTED", "contract", "Геометрия или профиль представления не входит в заявленный контракт.");
   if (!list(policy.allowedTransitions).includes(request.sourceGeometry + "→" + request.targetGeometry)) return closed(meta, "GEOMETRY_OPERATION_UNSUPPORTED", "policy", "Переход не разрешён политикой.");
-  if (Number(request.transitionCount || 1) > Number(policy.transitionBudget || 1)) return closed(meta, "TRANSITION_BUDGET_EXCEEDED", "policy", "Превышен допустимый предел переходов.");
+  const count = request.transitionCount === undefined ? 1 : request.transitionCount;
+  if (!Number.isInteger(count) || count < 1 || !Number.isInteger(policy.transitionBudget) || policy.transitionBudget < 0) return closed(meta, "TRANSITION_BUDGET_INVALID", "contract", "Нужны целое число переходов и явный неотрицательный бюджет.");
+  if (count > policy.transitionBudget) return closed(meta, "TRANSITION_BUDGET_EXCEEDED", "policy", "Превышен допустимый предел переходов.");
   if (context.preflightInvariantVerdict === "rupture") return closed(meta, "GEOMETRY_RUPTURE", "invariant", "Предварительная проверка обнаружила утрату основания.", { invariantVerdict:"rupture" });
   if (!present(request.construct) || !present(request.targetForm) || !present(request.invariantCriterion) || !present(request.transitionRule) || !list(request.invariantEvidence).length || context.preflightInvariantVerdict !== "preserved") return closed(meta, "GEOMETRY_EVIDENCE_INSUFFICIENT", "evidence", "Нет достаточного внешнего свидетельства сохранения инварианта.", { outcome:"suspended", invariantVerdict:"review" });
   return result(meta, { invariantVerdict:"preserved", output:{ sourceGeometry:request.sourceGeometry, targetGeometry:request.targetGeometry, targetForm:request.targetForm, representationProfile:request.representationProfile, losses:list(request.losses), gains:list(request.gains) }, evidence:[...request.invariantEvidence, "preflight-invariant-preserved"] });
@@ -93,7 +97,9 @@ function runChronos(request, context, policy, meta, environment) {
     return result(meta, { lifecycleState:"DISPERSED", output:{ phase:"disperse", cleanup:context.cleanupEvidence }, evidence:["explicit-cleanup-evidence"] });
   }
   if (!list(policy.trustedTimeSources).includes(request.timeSource)) return closed(meta, "CLOCK_UNTRUSTED", "time", "Источник времени не разрешён политикой.");
+  if (!nonnegative(policy.maxClockSkewMs) || !nonnegative(policy.maxTtlMs) || policy.maxTtlMs === 0) return closed(meta, "CHRONOS_POLICY_INVALID", "policy", "Нужны конечные числовые ограничения отклонения часов и положительного TTL.");
   const issued = Date.parse(request.issuedAt); const expires = Date.parse(request.expiresAt); const nowMs = environment.nowMs ? environment.nowMs() : Date.now();
+  if (!Number.isFinite(nowMs)) return closed(meta, "CLOCK_UNTRUSTED", "time", "Источник времени не вернул конечную числовую отметку.");
   if (!Number.isFinite(issued) || !Number.isFinite(expires) || !present(request.nonce) || !present(request.idempotencyKey) || !present(context.cleanupHandlerId)) return closed(meta, "CHRONOS_EXPIRED", "contract", "Временное окно, nonce, идемпотентный ключ или обработчик cleanup не предъявлены.");
   if (Math.abs(issued - nowMs) > Number(policy.maxClockSkewMs || 0)) return closed(meta, "CLOCK_SKEW_EXCEEDED", "time", "Отклонение времени превышает политику.");
   if (expires <= nowMs || expires <= issued || expires - issued > Number(policy.maxTtlMs || 0)) return closed(meta, "CHRONOS_EXPIRED", "time", "Окно действия истекло или превышает допустимый TTL.");
@@ -106,7 +112,8 @@ function runChronos(request, context, policy, meta, environment) {
 function runInvariant(request, context, policy, meta) {
   const integrity = context.integrityEvidence || {};
   if (!present(request.seal) || integrity.sealVerified !== true) return closed(meta, "SEAL_INVALID", "integrity", "Контрольная печать не подтверждена внешним проверяющим механизмом.", { invariantVerdict:"rupture" });
-  if (request.signature && integrity.signatureVerified !== true) return closed(meta, "SIGNATURE_INVALID", "integrity", "Криптографическая подпись не подтверждена внешним механизмом.", { invariantVerdict:"rupture" });
+  if (policy.requireSignature === true && !present(request.signature)) return closed(meta, "SIGNATURE_INVALID", "integrity", "Политика требует подпись, но она не предъявлена.", { invariantVerdict:"review" });
+  if (present(request.signature) && integrity.signatureVerified !== true) return closed(meta, "SIGNATURE_INVALID", "integrity", "Криптографическая подпись не подтверждена внешним механизмом.", { invariantVerdict:"rupture" });
   if ((policy.requireSignature === true || request.signature) && integrity.signerTrusted !== true) return closed(meta, "SIGNER_UNTRUSTED", "trust", "Ключ не принят явным реестром доверия.", { invariantVerdict:"review" });
   if (!list(policy.compatibleVersions).includes(request.version)) return closed(meta, "VERSION_INCOMPATIBLE", "version", "Версия не разрешена политикой совместимости.");
   if (!present(request.author) || !present(request.source) || !list(request.provenance).length) return closed(meta, "PROVENANCE_MISSING", "provenance", "Автор, источник или цепь происхождения не предъявлены.", { invariantVerdict:"review" });
@@ -118,7 +125,9 @@ function runInvariant(request, context, policy, meta) {
 }
 
 export function runEngine(engineId, request = {}, context = {}, policy = {}, environment = {}) {
-  const meta = executionMeta(engineId, request, environment);
+  const record = value => value !== null && typeof value === "object" && !Array.isArray(value);
+  const meta = executionMeta(engineId, record(request) ? request : {}, environment);
+  if (![request, context, policy].every(record)) return closed(meta, "ENGINE_INPUT_INVALID", "contract", "Request, Context и Policy должны быть JSON-объектами.");
   if (!ENGINE_IDS.includes(engineId)) return closed(meta, "ENGINE_UNKNOWN", "contract", "Неизвестный идентификатор движка.", { outcome:"failed" });
   try {
     if (engineId === "QP-01") return runPoint(request, context, policy, meta);

@@ -25,6 +25,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify QENGINE before publishing
+        run: |
+          node 05-engineering-applications/QENGINE-001/runtime/tests.mjs
+          node --test 05-engineering-applications/QENGINE-001/runtime/fail-closed.test.mjs
       - uses: actions/configure-pages@v5
         with:
           enablement: true
