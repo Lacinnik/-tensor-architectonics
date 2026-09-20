@@ -5,9 +5,8 @@ from __future__ import annotations
 
 import argparse
 import json
-import subprocess
 import urllib.request
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -15,51 +14,23 @@ from confirmatory_common import (
     AUTHORIZATION_PATH,
     MANIFEST_PATH,
     MODEL_PATH,
+    OMNI_BASE,
     PROTOCOL_ID,
     PROTOCOL_VERSION,
     iso,
+    months_for,
     repository_root,
+    require_ancestor,
     require_exact_committed_file,
     sha256_bytes,
     sha256_file,
     utc,
+    validate_authorization_document,
+    validate_manifest,
+    validate_parent_manifest_evidence,
+    validate_source_receipts,
     verify_protocol_anchor,
 )
-from run_gate import (
-    feature_vector,
-    minute_grid,
-    parse,
-    quality_result,
-    target_after_cutoff,
-)
-
-
-OMNI_BASE = "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min"
-
-
-def months_for(start: datetime, end: datetime) -> list[str]:
-    months: list[str] = []
-    cursor = start.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    last = end - timedelta(minutes=1)
-    while (cursor.year, cursor.month) <= (last.year, last.month):
-        months.append(cursor.strftime("%Y%m"))
-        if cursor.month == 12:
-            cursor = cursor.replace(year=cursor.year + 1, month=1)
-        else:
-            cursor = cursor.replace(month=cursor.month + 1)
-    return months
-
-
-def require_ancestor(root: Path, ancestor: str, descendant: str) -> None:
-    if ancestor == descendant:
-        raise ValueError("authorization and manifest must use different commits")
-    result = subprocess.run(
-        ["git", "merge-base", "--is-ancestor", ancestor, descendant],
-        cwd=root,
-        check=False,
-    )
-    if result.returncode:
-        raise ValueError("manifest commit is not an ancestor of authorization commit")
 
 
 def validate_authorization(
@@ -69,27 +40,25 @@ def validate_authorization(
     protocol_anchor: dict[str, str],
     authorization_evidence: dict[str, str],
 ) -> None:
-    if authorization.get("protocol_id") != PROTOCOL_ID:
-        raise ValueError("authorization protocol_id mismatch")
-    if authorization.get("protocol_version") != PROTOCOL_VERSION:
-        raise ValueError("authorization protocol_version mismatch")
-    if authorization.get("state") != "TARGET-AUTHORIZATION-CANDIDATE":
-        raise ValueError("authorization state mismatch")
-    if authorization.get("target_access_permitted") is not False:
-        raise ValueError("authorization file must be inert until committed")
-    if authorization.get("manifest", {}).get("sha256") != manifest_hash:
-        raise ValueError("authorization manifest hash mismatch")
-    if authorization.get("protocol_freeze") != protocol_anchor:
-        raise ValueError("authorization protocol freeze mismatch")
+    manifest_evidence = {
+        "sha256": manifest_hash,
+        "commit": authorization.get("manifest", {}).get("commit"),
+        "committed_at": authorization.get("manifest", {}).get("committed_at"),
+    }
+    validate_authorization_document(
+        authorization,
+        manifest_evidence=manifest_evidence,
+        protocol_anchor=protocol_anchor,
+    )
     if utc(authorization_evidence["committed_at"]) >= datetime.now(timezone.utc):
         raise ValueError("authorization commit must predate target retrieval")
 
 
 def fetch_month(month: str, raw_dir: Path) -> dict[str, Any]:
     url = f"{OMNI_BASE}/omni_min{month}.asc"
-    retrieved_at = datetime.now(timezone.utc)
     with urllib.request.urlopen(url, timeout=120) as response:
         raw = response.read()
+    retrieved_at = datetime.now(timezone.utc)
     destination = raw_dir / f"omni_min{month}.asc"
     destination.write_bytes(raw)
     return {
@@ -101,62 +70,16 @@ def fetch_month(month: str, raw_dir: Path) -> dict[str, Any]:
     }
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--manifest", type=Path, default=MANIFEST_PATH)
-    parser.add_argument("--authorization", type=Path, default=AUTHORIZATION_PATH)
-    parser.add_argument("--output", type=Path, required=True)
-    args = parser.parse_args()
-
-    root = repository_root(Path(__file__).parent)
-    protocol_anchor = verify_protocol_anchor(root)
-    manifest_path = args.manifest if args.manifest.is_absolute() else root / args.manifest
-    authorization_path = (
-        args.authorization
-        if args.authorization.is_absolute()
-        else root / args.authorization
+def build_event_summaries(
+    manifest: dict[str, Any], sources: dict[str, dict[str, Any]]
+) -> list[dict[str, Any]]:
+    from run_gate import (
+        feature_vector,
+        minute_grid,
+        parse,
+        quality_result,
+        target_after_cutoff,
     )
-    manifest_relative = manifest_path.relative_to(root)
-    authorization_relative = authorization_path.relative_to(root)
-    manifest_evidence = require_exact_committed_file(root, manifest_relative)
-    authorization_evidence = require_exact_committed_file(
-        root, authorization_relative
-    )
-    require_ancestor(
-        root, manifest_evidence["commit"], authorization_evidence["commit"]
-    )
-
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    authorization = json.loads(authorization_path.read_text(encoding="utf-8"))
-    validate_authorization(
-        authorization,
-        manifest_hash=manifest_evidence["sha256"],
-        protocol_anchor=protocol_anchor,
-        authorization_evidence=authorization_evidence,
-    )
-    if manifest.get("state") != "MANIFEST-CANDIDATE":
-        raise ValueError("manifest is not ready for target retrieval")
-    if manifest.get("selected_event_count") != 20:
-        raise ValueError("manifest must contain 20 events")
-
-    model = json.loads((root / MODEL_PATH).read_text(encoding="utf-8"))
-    runner_path = root / "tools/eagc012/run_gate.py"
-    if sha256_file(runner_path) != model["provenance"]["runner_sha256"]:
-        raise ValueError("feature runner differs from frozen model provenance")
-
-    output = args.output if args.output.is_absolute() else root / args.output
-    raw_dir = output.parent / f"{output.stem}-raw"
-    raw_dir.mkdir(parents=True, exist_ok=True)
-    required_months = sorted(
-        {
-            month
-            for event in manifest["selected_events"]
-            for month in months_for(
-                utc(event["icme_start_time"]), utc(event["mo_end_time"])
-            )
-        }
-    )
-    sources = {month: fetch_month(month, raw_dir) for month in required_months}
 
     summaries: list[dict[str, Any]] = []
     for event in manifest["selected_events"]:
@@ -213,6 +136,72 @@ def main() -> None:
         if features_prefix:
             summary.update(features_prefix)
         summaries.append(summary)
+    return summaries
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--manifest", type=Path, default=MANIFEST_PATH)
+    parser.add_argument("--authorization", type=Path, default=AUTHORIZATION_PATH)
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args()
+
+    root = repository_root(Path(__file__).parent)
+    from validate_confirmatory_protocol import load_and_validate
+
+    protocol = load_and_validate(root)
+    protocol_anchor = verify_protocol_anchor(root)
+    manifest_path = args.manifest if args.manifest.is_absolute() else root / args.manifest
+    authorization_path = (
+        args.authorization
+        if args.authorization.is_absolute()
+        else root / args.authorization
+    )
+    manifest_relative = manifest_path.relative_to(root)
+    authorization_relative = authorization_path.relative_to(root)
+    manifest_evidence = require_exact_committed_file(root, manifest_relative)
+    authorization_evidence = require_exact_committed_file(
+        root, authorization_relative
+    )
+    require_ancestor(
+        root, manifest_evidence["commit"], authorization_evidence["commit"]
+    )
+
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    authorization = json.loads(authorization_path.read_text(encoding="utf-8"))
+    validate_manifest(manifest, protocol_anchor, require_complete=True)
+    require_ancestor(root, protocol_anchor["commit"], manifest_evidence["commit"])
+    validate_parent_manifest_evidence(root, manifest, manifest_evidence)
+    validate_authorization_document(
+        authorization,
+        manifest_evidence=manifest_evidence,
+        protocol_anchor=protocol_anchor,
+    )
+    if utc(authorization_evidence["committed_at"]) >= datetime.now(timezone.utc):
+        raise ValueError("authorization commit must predate target retrieval")
+
+    model = json.loads((root / MODEL_PATH).read_text(encoding="utf-8"))
+    runner_path = root / "tools/eagc012/run_gate.py"
+    if sha256_file(runner_path) != model["provenance"]["runner_sha256"]:
+        raise ValueError("feature runner differs from frozen model provenance")
+    if sha256_file(root / MODEL_PATH) != protocol["model"]["artifact_sha256"]:
+        raise ValueError("model artifact differs from protocol")
+
+    output = args.output if args.output.is_absolute() else root / args.output
+    raw_dir = output.parent / f"{output.stem}-raw"
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    required_months = sorted(
+        {
+            month
+            for event in manifest["selected_events"]
+            for month in months_for(
+                utc(event["icme_start_time"]), utc(event["mo_end_time"])
+            )
+        }
+    )
+    sources = {month: fetch_month(month, raw_dir) for month in required_months}
+
+    summaries = build_event_summaries(manifest, sources)
 
     source_manifest = {
         month: {key: value for key, value in item.items() if key != "path"}
@@ -229,6 +218,7 @@ def main() -> None:
         "source_files": source_manifest,
         "events": summaries,
     }
+    validate_source_receipts(result, manifest, authorization_evidence)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(
         json.dumps(result, ensure_ascii=False, indent=2) + "\n",

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Append-only, target-blind accrual for EAGC-012 ICME v1.1."""
+"""Append-only, target-blind accrual for EAGC-012 ICME v1.1.1."""
 
 from __future__ import annotations
 
@@ -17,28 +17,28 @@ from pathlib import Path
 from typing import Any
 
 from confirmatory_common import (
+    ALLOWLIST,
+    COHORT_SIZE,
+    CUTOFF_MINUTES,
     MANIFEST_PATH,
+    MINIMUM_TARGET_MINUTES,
     PROTOCOL_ID,
     PROTOCOL_VERSION,
+    SOURCE_PREFIX,
     canonical_json_bytes,
     iso,
+    official_catalog_url,
     repository_root,
     require_exact_committed_file,
     sha256_bytes,
     utc,
+    validate_manifest,
     verify_protocol_anchor,
+    version_tuple,
 )
 
 
-ALLOWLIST = ("icmecat_id", "sc_insitu", "icme_start_time", "mo_end_time")
-COHORT_SIZE = 20
-CUTOFF_MINUTES = 720
-MINIMUM_TARGET_MINUTES = 720
 LANDING_URL = "https://helioforecast.space/icmecat"
-SOURCE_PREFIX = (
-    "https://helioforecast.space/static/sync/icmecat/"
-    "HELIO4CAST_ICMECAT_v"
-)
 
 
 class LinkParser(HTMLParser):
@@ -56,17 +56,8 @@ class LinkParser(HTMLParser):
                 self.links.append(value)
 
 
-def version_tuple(value: str) -> tuple[int, int]:
-    match = re.fullmatch(r"(\d+)\.(\d+)", value)
-    if match is None:
-        raise ValueError(f"invalid ICMECAT version: {value}")
-    major, minor = map(int, match.groups())
-    return major, minor
-
-
 def official_url(version: str) -> str:
-    major, minor = version_tuple(version)
-    return f"{SOURCE_PREFIX}{major}{minor}.csv"
+    return official_catalog_url(version)
 
 
 def version_from_url(url: str) -> str:
@@ -91,6 +82,28 @@ def discover_official_snapshots(html: str) -> list[tuple[str, str]]:
     if not found:
         raise ValueError("landing page exposes no official ICMECAT snapshot")
     return sorted(found.items(), key=lambda item: version_tuple(item[0]))
+
+
+def discovery_conflicts(
+    previous: dict[str, Any], snapshots: list[tuple[str, str]]
+) -> tuple[list[str], list[str]]:
+    history = previous.get("snapshot_history", [])
+    discovered = dict(snapshots)
+    missing = [
+        item["source_version"]
+        for item in history
+        if discovered.get(item["source_version"]) != item["source_url"]
+    ]
+    if not history:
+        return missing, []
+    last_version = version_tuple(history[-1]["source_version"])
+    recorded_versions = {item["source_version"] for item in history}
+    inserted = [
+        version
+        for version, _ in snapshots
+        if version_tuple(version) <= last_version and version not in recorded_versions
+    ]
+    return missing, inserted
 
 
 def parse_projection(raw: bytes) -> list[dict[str, str]]:
@@ -137,19 +150,7 @@ def new_manifest(freeze: dict[str, str]) -> dict[str, Any]:
 
 
 def validate_previous(previous: dict[str, Any], freeze: dict[str, str]) -> None:
-    if previous.get("protocol_id") != PROTOCOL_ID:
-        raise ValueError("previous manifest protocol_id mismatch")
-    if previous.get("protocol_version") != PROTOCOL_VERSION:
-        raise ValueError("previous manifest protocol_version mismatch")
-    if previous.get("freeze") != freeze:
-        raise ValueError("previous manifest freeze anchor mismatch")
-    if previous.get("target_access_permitted") is not False:
-        raise ValueError("accrual manifest must never permit target access")
-    selected = previous.get("selected_events")
-    if not isinstance(selected, list) or len(selected) > COHORT_SIZE:
-        raise ValueError("invalid previous selected_events")
-    if previous.get("selected_event_count") != len(selected):
-        raise ValueError("previous selected_event_count mismatch")
+    validate_manifest(previous, freeze)
 
 
 def apply_snapshot(
@@ -278,6 +279,7 @@ def apply_snapshot(
         "MANIFEST-CANDIDATE" if len(selected) == COHORT_SIZE else "OPEN-ACCRUAL"
     )
     result["hold_reasons"] = []
+    validate_manifest(result, freeze)
     return result
 
 
@@ -294,6 +296,9 @@ def main() -> None:
     args = parser.parse_args()
 
     root = repository_root(Path(__file__).parent)
+    from validate_confirmatory_protocol import load_and_validate
+
+    load_and_validate(root)
     freeze = verify_protocol_anchor(root)
     previous_path = args.previous_manifest
     if previous_path is None and args.output.is_file():
@@ -312,11 +317,24 @@ def main() -> None:
     landing_raw, _ = fetch(LANDING_URL)
     snapshots = discover_official_snapshots(landing_raw.decode("utf-8"))
     result = previous
+    if previous is not None:
+        missing, inserted = discovery_conflicts(previous, snapshots)
+        if missing or inserted:
+            result = deepcopy(previous)
+            result["state"] = "HOLD-CATALOG-DISCOVERY"
+            result["hold_reasons"] = [
+                f"official snapshot discovery changed; missing={missing}, inserted={inserted}"
+            ]
     processed = {
         item["source_version"]
         for item in (previous or {}).get("snapshot_history", [])
     }
-    for version, url in snapshots:
+    iteration = (
+        snapshots
+        if not (result or {}).get("state", "").startswith("HOLD")
+        else []
+    )
+    for version, url in iteration:
         raw, retrieved_at = fetch(url)
         if version in processed:
             check = apply_snapshot(
@@ -349,6 +367,7 @@ def main() -> None:
             "path": previous_path.relative_to(root).as_posix(),
             **previous_evidence,
         }
+    validate_manifest(result, freeze)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
         json.dumps(result, ensure_ascii=False, indent=2) + "\n",

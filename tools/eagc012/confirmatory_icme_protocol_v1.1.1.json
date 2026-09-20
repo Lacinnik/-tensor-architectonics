@@ -1,0 +1,221 @@
+{
+  "protocol_id": "TZAR-RESEARCH-EAGC-012-CONFIRMATORY-ICME",
+  "protocol_version": "1.1.1-prospective",
+  "status": "FROZEN-PRE-TARGET",
+  "supersedes": {
+    "protocol_version": "1.1.0-prospective",
+    "status": "SUPERSEDED-BEFORE-ACCRUAL",
+    "freeze_commit": "3d93269a2ad6a080e4902fbd35097a238f003fc1"
+  },
+  "claim_scope": {
+    "domain": "near-Earth ICME observed by Wind",
+    "primary_claim": "EAGC is noninferior to frozen Newell for post-cutoff minimum SYM-H on one strictly prospective 20-event ICME cohort",
+    "primary_baseline": "Newell",
+    "secondary_descriptive_baselines": [
+      "V_Bs",
+      "I_Q",
+      "Burton_OBrien_McPherron"
+    ],
+    "transport_exclusions": [
+      "SIR"
+    ],
+    "forbidden_inferences": [
+      "No ICME result may be transferred to SIR.",
+      "Secondary descriptive baselines cannot alter the primary decision.",
+      "PASS-SUPERIOR cannot be reported unless every superiority condition passes on the prospective cohort."
+    ]
+  },
+  "freeze": {
+    "anchor_kind": "introducing_git_commit",
+    "repository": "Lacinnik/-tensor-architectonics",
+    "path": "tools/eagc012/confirmatory_icme_protocol_v1.1.1.json",
+    "resolution_rule": "Use the earliest repository commit containing this exact protocol_id and protocol_version at this path. Current protocol bytes MUST equal the bytes at that commit.",
+    "time_field": "Git committer timestamp of the introducing commit",
+    "prospective_boundary": "Both icme_start_time and every catalog snapshot retrieval time MUST be strictly later than the resolved freeze timestamp.",
+    "amendment_policy": "Any change to protocol bytes, cohort rules, model artifacts, endpoint, comparison, quality rules, or decisions requires a new protocol version and a new prospective freeze."
+  },
+  "state_machine": {
+    "states": [
+      "FROZEN-PRE-TARGET",
+      "OPEN-ACCRUAL",
+      "MANIFEST-CANDIDATE",
+      "TARGET-AUTHORIZATION-CANDIDATE",
+      "TARGET-AUTHORIZED",
+      "SCORED",
+      "HOLD",
+      "PASS-SUPERIOR",
+      "PASS-NONINFERIOR",
+      "REJECT"
+    ],
+    "transitions": [
+      "FROZEN-PRE-TARGET -> OPEN-ACCRUAL after protocol anchor verification",
+      "OPEN-ACCRUAL -> MANIFEST-CANDIDATE after exactly 20 append-only selections",
+      "MANIFEST-CANDIDATE -> TARGET-AUTHORIZATION-CANDIDATE only after the exact manifest is committed",
+      "TARGET-AUTHORIZATION-CANDIDATE -> TARGET-AUTHORIZED only after the exact authorization is committed in a later descendant commit",
+      "TARGET-AUTHORIZED -> SCORED after provenance-complete OMNI retrieval and quality evaluation",
+      "SCORED -> PASS-SUPERIOR | PASS-NONINFERIOR | REJECT by the exact decision rules",
+      "Any broken invariant -> HOLD"
+    ],
+    "rollback": "No accrued event, manifest, authorization, target record, or score may be rewritten. Correction requires HOLD and a new protocol version."
+  },
+  "cohort": {
+    "planned_events": 20,
+    "ordering": [
+      "icme_start_time ascending",
+      "icmecat_id ascending"
+    ],
+    "eligibility": {
+      "sc_insitu": "Wind",
+      "required_fields": [
+        "icmecat_id",
+        "sc_insitu",
+        "icme_start_time",
+        "mo_end_time"
+      ],
+      "icme_start_after_freeze": true,
+      "minimum_minutes_after_cutoff": 720,
+      "whole_minute_timestamps": true,
+      "overlap_policy": "Retain the earlier eligible row under cohort.ordering and permanently record the later row as SKIP-OVERLAP."
+    },
+    "accrual_policy": "Process every officially linked ICMECAT version >=2.3 in ascending semantic version. Record each first-seen post-freeze Wind row once. Append selections only; never recompute prior decisions.",
+    "catalog_revision_policy": "Any change to a previously decided catalog row yields HOLD-CATALOG-REVISION; it cannot update or replace the row.",
+    "replacement_policy": "NONE",
+    "initial_state": "NOT_STARTED",
+    "manifest_path": "tools/eagc012/frozen/confirmatory-icme-v1.1.1-events.json",
+    "manifest_freeze_rule": "The exact complete manifest must exist in an earlier commit before target authorization can be generated."
+  },
+  "sources": {
+    "selector": {
+      "name": "HELIO4CAST ICMECAT",
+      "minimum_version": "2.3",
+      "landing_url": "https://helioforecast.space/icmecat",
+      "machine_url_pattern": "https://helioforecast.space/static/sync/icmecat/HELIO4CAST_ICMECAT_v{major}{minor}.csv",
+      "discovery_policy": "The accrual runner parses the official landing page, derives exact versioned URLs, rechecks hashes of processed versions, and processes unprocessed versions in ascending order.",
+      "allowlisted_columns": [
+        "icmecat_id",
+        "sc_insitu",
+        "icme_start_time",
+        "mo_end_time"
+      ],
+      "target_columns_forbidden_in_manifest": [
+        "Dst",
+        "SYM-H"
+      ],
+      "snapshot_receipt_fields": [
+        "source_url",
+        "source_version",
+        "retrieved_at",
+        "source_sha256",
+        "projected_rows_sha256",
+        "allowlisted_columns"
+      ]
+    },
+    "predictors_and_target": {
+      "name": "NASA OMNI high-resolution 1-minute data",
+      "base_url": "https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/monthly_1min",
+      "dataset_id": "OMNI_HRO_1MIN",
+      "access_boundary": "No OMNI request for a selected event window may occur until the exact manifest and exact authorization files are present in two ordered commits and all protocol/model hashes pass.",
+      "target": "minimum SYM-H over [cutoff, mo_end_time)",
+      "target_field": "SYM-H"
+    }
+  },
+  "window": {
+    "semantics": "half-open [start,end)",
+    "start": "icme_start_time",
+    "cutoff_minutes_after_start": 720,
+    "end": "mo_end_time",
+    "prediction_prefix": "[icme_start_time, cutoff)",
+    "target_window": "[cutoff, mo_end_time)"
+  },
+  "model": {
+    "fit_policy": "NEVER_REFIT",
+    "training_cohort": "80 previously disclosed Richardson-Cane development events",
+    "source_commit": "2da7de6df1ca0d3ff2a1a89576f078c97d389298",
+    "artifact_path": "tools/eagc012/frozen/confirmatory-icme-v1.1-model.json",
+    "artifact_sha256": "948b1ee4d176035e47f15e7708c9795dfc482fa739c6533a4b894c948c9fc5bd",
+    "eagc_kind": "standardized_ridge",
+    "eagc_alpha": 10.0,
+    "eagc_features": [
+      "pressure_peak",
+      "log_Newell",
+      "pressure_recent",
+      "south_hours"
+    ],
+    "primary_baseline_kind": "frozen_log_linear_Newell",
+    "target_leakage_policy": "Prospective targets cannot affect fitting, features, coefficients, scaling, calibration, or baselines."
+  },
+  "comparison": {
+    "primary_metric": "RMSE over the 20 event-level observed and predicted minimum SYM-H values",
+    "relative_improvement_formula": "(RMSE_Newell - RMSE_EAGC) / RMSE_Newell",
+    "zero_baseline_rmse_policy": "HOLD",
+    "paired_resampling_unit": "event",
+    "bootstrap_replicates": 10000,
+    "bootstrap_sample_size": 20,
+    "bootstrap_indices_path": "tools/eagc012/frozen/confirmatory-icme-v1.1-bootstrap-indices.bin",
+    "bootstrap_indices_sha256": "f5c51d0a02b7ca4d17ae6f703c2f84d7b8a99b03190bdc0ba5702b91efb28027",
+    "bootstrap_encoding": "uint8 row-major; 10000 rows of 20 zero-based indices",
+    "noninferiority_margin_relative_rmse": -0.05,
+    "superiority_margin_relative_rmse": 0.05,
+    "minimum_bootstrap_probability": 0.9,
+    "numeric_policy": "Use unrounded Python float computations; round only for display."
+  },
+  "decision": {
+    "PASS-NONINFERIOR": [
+      "All 20 frozen events are SCORABLE.",
+      "Point relative improvement is strictly greater than -0.05.",
+      "The frozen-index bootstrap fraction with relative improvement strictly greater than -0.05 is at least 0.90.",
+      "Every leave-one-event-out relative improvement is strictly greater than -0.05."
+    ],
+    "PASS-SUPERIOR": [
+      "Every PASS-NONINFERIOR condition passes.",
+      "Point relative improvement is at least 0.05.",
+      "The frozen-index bootstrap fraction with relative improvement strictly greater than 0 is at least 0.90.",
+      "Every leave-one-event-out relative improvement is strictly greater than 0."
+    ],
+    "REJECT": "All 20 frozen events are SCORABLE and at least one PASS-NONINFERIOR condition fails.",
+    "HOLD": "Any incomplete cohort, non-SCORABLE event, zero Newell RMSE, missing provenance, hash mismatch, chronology failure, catalog revision, unauthorized target access, or other invariant violation.",
+    "precedence": [
+      "HOLD",
+      "PASS-SUPERIOR",
+      "PASS-NONINFERIOR",
+      "REJECT"
+    ]
+  },
+  "data_quality": {
+    "required_prefix_fields": [
+      "by",
+      "bz",
+      "speed",
+      "pressure",
+      "symh"
+    ],
+    "minimum_prefix_coverage": 0.75,
+    "minimum_target_symh_coverage": 0.9,
+    "maximum_gap_minutes": 15,
+    "failure_policy": "Fail closed to HOLD; never replace an accrued event."
+  },
+  "reproducibility": {
+    "python": "3.12.14",
+    "registry_path": "tools/eagc012/confirmatory_protocol_registry.json",
+    "registry_sha256": "546edd394eaa253ff6512c4923f89561e9ae602b8eb996378981218864b150f9",
+    "implementation_sha256": {
+      "tools/eagc012/confirmatory_common.py": "bb12690476e23f467c0e01e6899110681d3d0bbef4a28023573aec384ac5c0e3",
+      "tools/eagc012/accrue_confirmatory_cohort.py": "75fe9e51ff405a6978ad6c064a1ba6f5555a5dd523dabd709ade247a54c7aea5",
+      "tools/eagc012/authorize_confirmatory_target.py": "b74c7c6cc122c213e2a0cd2f87c7722c1126d4d57bf9ae84226b5af9ffe17d8e",
+      "tools/eagc012/prepare_confirmatory_data.py": "b123a79a05b42192ad1549d1c006a3358be96e04af9bf433fbaa4a9ad7a3bc7c",
+      "tools/eagc012/score_confirmatory_cohort.py": "b75fd440186190d919c01403b96fedc53ee2b9da5c3d6925830927db1849f315",
+      "tools/eagc012/validate_confirmatory_protocol.py": "6955294c21461ca89f219763b1923c5d082fc53a07d034506ee1e1724e509e6f",
+      "tools/eagc012/run_gate.py": "d98f12d7f08ce8d94699767130d0085f87fb82cfab5d03b66e5a8db3d79fc263",
+      ".github/workflows/eagc012-field-gate.yml": "3f97af4c15c5976f0f21af5fc2cb0bcabc229730f273a6241a54b65430a9fdaf"
+    },
+    "required_artifacts": [
+      "immutable protocol and registry",
+      "append-only target-blind manifest with snapshot receipts",
+      "committed target authorization",
+      "frozen fitted model and training source hashes",
+      "frozen bootstrap index matrix",
+      "per-event target source hashes, quality, predictions, and observed endpoint",
+      "machine-readable adjudication with protocol, manifest, authorization, model, scorer, and source identities"
+    ]
+  }
+}

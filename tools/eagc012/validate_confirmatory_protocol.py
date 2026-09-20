@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail-closed semantic, artifact, and Git-anchor validation for ICME v1.1."""
+"""Fail-closed semantic, artifact, and Git-anchor validation for ICME v1.1.1."""
 
 from __future__ import annotations
 
@@ -21,9 +21,8 @@ from confirmatory_common import (
 )
 
 
-EXPECTED_PROTOCOL_SHA256 = "a423e8274f1149d3e3e0997d09fc87bad433a1cb93208741e5fda24ea7cc6bc9"
-EXPECTED_REGISTRY_SHA256 = "11e8fd28c9e84e4a493f416741af63368b858e826e49f9147098d228ffdb3b92"
 EXPECTED_V1_PROTOCOL_SHA256 = "7c2251d3fb3374c28707a1c5466b8142293360c158bf6557ce5c71f309fa4c79"
+EXPECTED_V110_PROTOCOL_SHA256 = "a423e8274f1149d3e3e0997d09fc87bad433a1cb93208741e5fda24ea7cc6bc9"
 EXPECTED_MODEL_SHA256 = "948b1ee4d176035e47f15e7708c9795dfc482fa739c6533a4b894c948c9fc5bd"
 EXPECTED_BOOTSTRAP_SHA256 = "f5c51d0a02b7ca4d17ae6f703c2f84d7b8a99b03190bdc0ba5702b91efb28027"
 EXPECTED_PRECEDENCE = [
@@ -70,11 +69,11 @@ def validate_protocol(protocol: dict[str, Any]) -> None:
     require(
         protocol.get("supersedes")
         == {
-            "protocol_version": "1.0.0-prospective",
+            "protocol_version": "1.1.0-prospective",
             "status": "SUPERSEDED-BEFORE-ACCRUAL",
-            "freeze_commit": "2203bcd4513b538aec66062083a882f88f9ebf97",
+            "freeze_commit": "3d93269a2ad6a080e4902fbd35097a238f003fc1",
         },
-        "v1 supersession boundary changed",
+        "v1.1.0 supersession boundary changed",
     )
 
     scope = protocol["claim_scope"]
@@ -232,18 +231,35 @@ def validate_registry(registry: dict[str, Any]) -> None:
         "v1 registry status",
     )
     require(
+        versions["1.1.0-prospective"]["status"]
+        == "SUPERSEDED-BEFORE-ACCRUAL",
+        "v1.1.0 registry status",
+    )
+    require(
+        versions["1.1.0-prospective"]["superseded_by"] == PROTOCOL_VERSION,
+        "v1.1.0 supersession target",
+    )
+    require(
         versions[PROTOCOL_VERSION]["accrual_state"] == "NOT_STARTED",
-        "v1.1 accrual state",
+        "v1.1.1 accrual state",
     )
 
 
 def validate_artifacts(root: Path, protocol: dict[str, Any]) -> None:
-    require(sha256_file(root / PROTOCOL_PATH) == EXPECTED_PROTOCOL_SHA256, "protocol bytes")
-    require(sha256_file(root / REGISTRY_PATH) == EXPECTED_REGISTRY_SHA256, "registry bytes")
+    require(
+        sha256_file(root / REGISTRY_PATH)
+        == protocol["reproducibility"]["registry_sha256"],
+        "registry bytes",
+    )
     require(
         sha256_file(root / "tools/eagc012/confirmatory_icme_protocol.json")
         == EXPECTED_V1_PROTOCOL_SHA256,
         "v1 frozen protocol changed",
+    )
+    require(
+        sha256_file(root / "tools/eagc012/confirmatory_icme_protocol_v1.1.0.json")
+        == EXPECTED_V110_PROTOCOL_SHA256,
+        "v1.1.0 frozen protocol changed",
     )
     require(sha256_file(root / MODEL_PATH) == EXPECTED_MODEL_SHA256, "model artifact")
     require(
@@ -255,6 +271,21 @@ def validate_artifacts(root: Path, protocol: dict[str, Any]) -> None:
     require(model["fit_policy"].startswith("Parameters are immutable"), "model fit policy")
     require(model["training_cohort"]["event_count"] == 80, "training event count")
     require(len(model["training_cohort"]["source_files"]) == 66, "training source hashes")
+    required_implementation = {
+        "tools/eagc012/confirmatory_common.py",
+        "tools/eagc012/accrue_confirmatory_cohort.py",
+        "tools/eagc012/authorize_confirmatory_target.py",
+        "tools/eagc012/prepare_confirmatory_data.py",
+        "tools/eagc012/score_confirmatory_cohort.py",
+        "tools/eagc012/validate_confirmatory_protocol.py",
+        "tools/eagc012/run_gate.py",
+        ".github/workflows/eagc012-field-gate.yml",
+    }
+    require(
+        set(protocol["reproducibility"]["implementation_sha256"])
+        == required_implementation,
+        "implementation hash inventory",
+    )
     for path, expected in protocol["reproducibility"]["implementation_sha256"].items():
         require(sha256_file(root / path) == expected, f"implementation drift: {path}")
 
@@ -267,7 +298,10 @@ def load_and_validate(root: Path, *, verify_git: bool = True) -> dict[str, Any]:
     validate_artifacts(root, protocol)
     if verify_git:
         anchor = verify_protocol_anchor(root)
-        require(anchor["protocol_sha256"] == EXPECTED_PROTOCOL_SHA256, "Git anchor hash")
+        require(
+            anchor["protocol_sha256"] == sha256_file(root / PROTOCOL_PATH),
+            "Git anchor hash",
+        )
     return protocol
 
 

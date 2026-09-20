@@ -7,23 +7,29 @@ from pathlib import Path
 
 from accrue_confirmatory_cohort import (
     apply_snapshot,
+    discovery_conflicts,
     discover_official_snapshots,
     official_url,
     version_from_url,
 )
 from authorize_confirmatory_target import build_authorization
-from confirmatory_common import PROTOCOL_ID, PROTOCOL_VERSION, iso
+from confirmatory_common import MANIFEST_PATH, PROTOCOL_ID, PROTOCOL_VERSION, iso
 from prepare_confirmatory_data import validate_authorization
-from score_confirmatory_cohort import adjudicate_metrics, load_bootstrap_indices
+from score_confirmatory_cohort import (
+    adjudicate_metrics,
+    load_bootstrap_indices,
+    score_summary,
+)
 from validate_confirmatory_protocol import (
     load_and_validate,
+    validate_artifacts,
     validate_protocol,
     validate_registry,
 )
 
 
 ROOT = Path(__file__).resolve().parents[2]
-PROTOCOL_PATH = ROOT / "tools/eagc012/confirmatory_icme_protocol_v1.1.0.json"
+PROTOCOL_PATH = ROOT / "tools/eagc012/confirmatory_icme_protocol_v1.1.1.json"
 REGISTRY_PATH = ROOT / "tools/eagc012/confirmatory_protocol_registry.json"
 
 
@@ -70,7 +76,7 @@ class ProtocolTests(unittest.TestCase):
 
     def test_protocol_version_drift_fails(self) -> None:
         changed = copy.deepcopy(self.protocol)
-        changed["protocol_version"] = "1.1.1-prospective"
+        changed["protocol_version"] = "1.1.2-prospective"
         with self.assertRaisesRegex(ValueError, "protocol_version"):
             validate_protocol(changed)
 
@@ -92,6 +98,14 @@ class ProtocolTests(unittest.TestCase):
         changed["model"]["source_commit"] = "f" * 40
         with self.assertRaisesRegex(ValueError, "model source commit"):
             validate_protocol(changed)
+
+    def test_runtime_dependency_drift_fails(self) -> None:
+        changed = copy.deepcopy(self.protocol)
+        changed["reproducibility"]["implementation_sha256"][
+            "tools/eagc012/run_gate.py"
+        ] = "0" * 64
+        with self.assertRaisesRegex(ValueError, "implementation drift: tools/eagc012/run_gate.py"):
+            validate_artifacts(ROOT, changed)
 
     def test_registry_cannot_reactivate_v1(self) -> None:
         changed = copy.deepcopy(self.registry)
@@ -222,6 +236,21 @@ class AccrualTests(unittest.TestCase):
                 freeze=freeze(),
             )
 
+    def test_disappeared_processed_snapshot_is_a_conflict(self) -> None:
+        previous = apply_snapshot(
+            None,
+            raw=catalog(event_rows(1, 3)),
+            source_url=official_url("2.3"),
+            source_version="2.3",
+            retrieved_at="2026-09-19T00:00:00Z",
+            freeze=freeze(),
+        )
+        missing, inserted = discovery_conflicts(
+            previous, [("2.4", official_url("2.4"))]
+        )
+        self.assertEqual(missing, ["2.3"])
+        self.assertEqual(inserted, [])
+
 
 class AuthorizationAndScoringTests(unittest.TestCase):
     def complete_manifest(self) -> dict:
@@ -246,7 +275,7 @@ class AuthorizationAndScoringTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "not complete"):
             build_authorization(
                 incomplete,
-                manifest_path=Path("manifest.json"),
+                manifest_path=MANIFEST_PATH,
                 manifest_evidence={
                     "sha256": "c" * 64,
                     "commit": "d" * 40,
@@ -258,7 +287,7 @@ class AuthorizationAndScoringTests(unittest.TestCase):
     def test_authorization_is_inert_until_committed(self) -> None:
         authorization = build_authorization(
             self.complete_manifest(),
-            manifest_path=Path("manifest.json"),
+            manifest_path=MANIFEST_PATH,
             manifest_evidence={
                 "sha256": "c" * 64,
                 "commit": "d" * 40,
@@ -277,6 +306,54 @@ class AuthorizationAndScoringTests(unittest.TestCase):
                 "committed_at": iso(datetime.now(timezone.utc) - timedelta(hours=1)),
             },
         )
+
+    def test_manifest_with_target_field_cannot_be_authorized(self) -> None:
+        manifest = self.complete_manifest()
+        manifest["selected_events"][0]["SYM-H"] = -999
+        with self.assertRaisesRegex(ValueError, "forbidden target field"):
+            build_authorization(
+                manifest,
+                manifest_path=MANIFEST_PATH,
+                manifest_evidence={
+                    "sha256": "c" * 64,
+                    "commit": "d" * 40,
+                    "committed_at": "2026-12-31T01:00:00Z",
+                },
+                protocol_anchor=freeze(),
+            )
+
+    def test_forged_summary_fails_closed(self) -> None:
+        manifest = self.complete_manifest()
+        authorization = build_authorization(
+            manifest,
+            manifest_path=MANIFEST_PATH,
+            manifest_evidence={
+                "sha256": "c" * 64,
+                "commit": "d" * 40,
+                "committed_at": "2026-12-31T01:00:00Z",
+            },
+            protocol_anchor=freeze(),
+        )
+        summary = {
+            "protocol_id": PROTOCOL_ID,
+            "protocol_version": PROTOCOL_VERSION,
+            "manifest_sha256": "c" * 64,
+            "authorization_sha256": "e" * 64,
+            "source_files": {
+                "fake": {
+                    "sha256": "f" * 64,
+                    "retrieved_at": "2027-01-01T00:00:00Z",
+                    "url": "https://example.invalid/not-omni",
+                }
+            },
+            "events": [
+                {"event_id": item["icmecat_id"]}
+                for item in manifest["selected_events"]
+            ],
+        }
+        result = score_summary(summary, manifest, authorization, {}, [])
+        self.assertEqual(result["decision"], "HOLD")
+        self.assertIn("target source URL is not canonical", result["hold_reasons"])
 
     def test_decision_thresholds_are_exact(self) -> None:
         self.assertEqual(

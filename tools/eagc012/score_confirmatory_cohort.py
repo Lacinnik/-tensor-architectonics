@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 from pathlib import Path
 from typing import Any
 
@@ -13,20 +14,21 @@ from confirmatory_common import (
     BOOTSTRAP_PATH,
     MANIFEST_PATH,
     MODEL_PATH,
+    OMNI_BASE,
     PROTOCOL_ID,
     PROTOCOL_PATH,
     PROTOCOL_VERSION,
+    months_for,
     repository_root,
+    require_ancestor,
     require_exact_committed_file,
     sha256_file,
     utc,
+    validate_authorization_document,
+    validate_manifest,
+    validate_parent_manifest_evidence,
+    validate_source_receipts,
     verify_protocol_anchor,
-)
-from run_gate import (
-    predict_ridge,
-    predict_univariate,
-    relative_improvement,
-    rmse,
 )
 
 
@@ -41,6 +43,8 @@ def load_bootstrap_indices(path: Path, replicates: int, size: int) -> list[bytes
 
 
 def predict(model: dict[str, Any], item: dict[str, Any]) -> float:
+    from run_gate import predict_ridge, predict_univariate
+
     if model["kind"] == "standardized_ridge":
         return predict_ridge(model, item)
     if model["kind"] == "log_linear":
@@ -56,6 +60,8 @@ def resampled_probability(
     *,
     threshold: float,
 ) -> float:
+    from run_gate import relative_improvement, rmse
+
     wins = 0
     for row in indices:
         observed = [actual[index] for index in row]
@@ -71,6 +77,8 @@ def resampled_probability(
 def leave_one_out_improvements(
     actual: list[float], candidate: list[float], baseline: list[float]
 ) -> list[float]:
+    from run_gate import relative_improvement, rmse
+
     values: list[float] = []
     for omitted in range(len(actual)):
         keep = [index for index in range(len(actual)) if index != omitted]
@@ -129,6 +137,8 @@ def score_summary(
     model_artifact: dict[str, Any],
     indices: list[bytes],
 ) -> dict[str, Any]:
+    from run_gate import relative_improvement, rmse
+
     reasons: list[str] = []
     for label, value in (
         ("summary", summary),
@@ -157,11 +167,27 @@ def score_summary(
         for item in sources.values()
     ):
         reasons.append("target source receipt is incomplete")
+    elif any(
+        item.get("url") != f"{OMNI_BASE}/omni_min{month}.asc"
+        for month, item in sources.items()
+    ):
+        reasons.append("target source URL is not canonical")
 
     expected_ids = [item["icmecat_id"] for item in manifest.get("selected_events", [])]
     events = summary.get("events")
     if not isinstance(events, list) or [item.get("event_id") for item in events] != expected_ids:
         reasons.append("event order or identity differs from frozen manifest")
+    elif any(
+        item.get("window_start") != frozen.get("icme_start_time")
+        or item.get("forecast_cutoff") != frozen.get("cutoff")
+        or item.get("window_end_exclusive") != frozen.get("mo_end_time")
+        or item.get("source_months")
+        != months_for(
+            utc(frozen["icme_start_time"]), utc(frozen["mo_end_time"])
+        )
+        for item, frozen in zip(events, manifest.get("selected_events", []))
+    ):
+        reasons.append("event windows differ from frozen manifest")
     if reasons:
         return hold(reasons)
 
@@ -184,6 +210,14 @@ def score_summary(
         missing = sorted(name for name in required_features if event.get(name) is None)
         if missing:
             reasons.append(f"{event['event_id']} lacks: {', '.join(missing)}")
+        numeric = [event.get("SYM_H_min"), *(event.get(name) for name in required_features)]
+        if any(
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(float(value))
+            for value in numeric
+        ):
+            reasons.append(f"{event['event_id']} contains non-finite numeric evidence")
     if reasons:
         return hold(reasons)
 
@@ -200,13 +234,16 @@ def score_summary(
     if baseline_rmse == 0:
         return hold(["primary baseline RMSE is zero"])
     point = relative_improvement(candidate_rmse, baseline_rmse)
-    probability_noninferior = resampled_probability(
-        actual, candidate, baseline, indices, threshold=-0.05
-    )
-    probability_superior = resampled_probability(
-        actual, candidate, baseline, indices, threshold=0.0
-    )
-    omitted = leave_one_out_improvements(actual, candidate, baseline)
+    try:
+        probability_noninferior = resampled_probability(
+            actual, candidate, baseline, indices, threshold=-0.05
+        )
+        probability_superior = resampled_probability(
+            actual, candidate, baseline, indices, threshold=0.0
+        )
+        omitted = leave_one_out_improvements(actual, candidate, baseline)
+    except ValueError as error:
+        return hold([str(error)])
 
     decision = adjudicate_metrics(
         point=point,
@@ -253,17 +290,12 @@ def score_summary(
     }
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("summary", type=Path)
-    parser.add_argument("--manifest", type=Path, default=MANIFEST_PATH)
-    parser.add_argument("--authorization", type=Path, default=AUTHORIZATION_PATH)
-    parser.add_argument("--output", type=Path, required=True)
-    args = parser.parse_args()
-
+def execute(args: argparse.Namespace) -> dict[str, Any]:
     root = repository_root(Path(__file__).parent)
+    from validate_confirmatory_protocol import load_and_validate
+
+    protocol = load_and_validate(root)
     protocol_anchor = verify_protocol_anchor(root)
-    protocol = json.loads((root / PROTOCOL_PATH).read_text(encoding="utf-8"))
     manifest_path = args.manifest if args.manifest.is_absolute() else root / args.manifest
     authorization_path = (
         args.authorization
@@ -278,10 +310,15 @@ def main() -> None:
     )
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     authorization = json.loads(authorization_path.read_text(encoding="utf-8"))
-    if manifest.get("freeze") != protocol_anchor:
-        raise ValueError("manifest freeze does not match protocol anchor")
-    if authorization.get("manifest", {}).get("sha256") != manifest_evidence["sha256"]:
-        raise ValueError("authorization does not bind current committed manifest")
+    validate_manifest(manifest, protocol_anchor, require_complete=True)
+    require_ancestor(root, protocol_anchor["commit"], manifest_evidence["commit"])
+    validate_parent_manifest_evidence(root, manifest, manifest_evidence)
+    validate_authorization_document(
+        authorization,
+        manifest_evidence=manifest_evidence,
+        protocol_anchor=protocol_anchor,
+    )
+    require_ancestor(root, manifest_evidence["commit"], authorization_evidence["commit"])
 
     model_path = root / MODEL_PATH
     bootstrap_path = root / BOOTSTRAP_PATH
@@ -293,13 +330,45 @@ def main() -> None:
     indices = load_bootstrap_indices(bootstrap_path, 10000, 20)
     summary_path = args.summary if args.summary.is_absolute() else root / args.summary
     summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    if summary.get("manifest_commit") != manifest_evidence["commit"]:
+        raise ValueError("summary manifest commit mismatch")
+    if summary.get("authorization_commit") != authorization_evidence["commit"]:
+        raise ValueError("summary authorization commit mismatch")
+    if summary.get("manifest_sha256") != manifest_evidence["sha256"]:
+        raise ValueError("summary manifest hash mismatch")
     if summary.get("authorization_sha256") != authorization_evidence["sha256"]:
         raise ValueError("summary authorization hash mismatch")
-    if utc(summary["retrieval_completed_at"]) <= utc(
-        authorization_evidence["committed_at"]
-    ):
-        raise ValueError("target retrieval did not follow authorization commit")
-    result = score_summary(summary, manifest, authorization, model, indices)
+    validate_source_receipts(summary, manifest, authorization_evidence)
+
+    raw_dir = summary_path.parent / f"{summary_path.stem}-raw"
+    sources: dict[str, dict[str, Any]] = {}
+    for month, receipt in summary["source_files"].items():
+        path = raw_dir / f"omni_min{month}.asc"
+        if not path.is_file():
+            raise ValueError(f"missing target source file: {path}")
+        if sha256_file(path) != receipt["sha256"] or path.stat().st_size != receipt["size_bytes"]:
+            raise ValueError(f"target source file evidence mismatch: {month}")
+        sources[month] = {**receipt, "path": path}
+    from prepare_confirmatory_data import build_event_summaries
+
+    recomputed_events = build_event_summaries(manifest, sources)
+    if recomputed_events != summary.get("events"):
+        raise ValueError("event summary does not reproduce from target source files")
+    return score_summary(summary, manifest, authorization, model, indices)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("summary", type=Path)
+    parser.add_argument("--manifest", type=Path, default=MANIFEST_PATH)
+    parser.add_argument("--authorization", type=Path, default=AUTHORIZATION_PATH)
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args()
+    try:
+        result = execute(args)
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
+        result = hold([str(error)])
+    root = repository_root(Path(__file__).parent)
     output = args.output if args.output.is_absolute() else root / args.output
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(

@@ -2,8 +2,8 @@
   "registry_id": "TZAR-RESEARCH-EAGC-012-CONFIRMATORY-REGISTRY",
   "active_protocol": {
     "protocol_id": "TZAR-RESEARCH-EAGC-012-CONFIRMATORY-ICME",
-    "protocol_version": "1.1.0-prospective",
-    "path": "tools/eagc012/confirmatory_icme_protocol_v1.1.0.json",
+    "protocol_version": "1.1.1-prospective",
+    "path": "tools/eagc012/confirmatory_icme_protocol_v1.1.1.json",
     "status": "FROZEN-PRE-TARGET",
     "freeze_anchor": "introducing_git_commit"
   },
@@ -19,6 +19,14 @@
     {
       "protocol_version": "1.1.0-prospective",
       "path": "tools/eagc012/confirmatory_icme_protocol_v1.1.0.json",
+      "freeze_commit": "3d93269a2ad6a080e4902fbd35097a238f003fc1",
+      "status": "SUPERSEDED-BEFORE-ACCRUAL",
+      "superseded_by": "1.1.1-prospective",
+      "reason": "Independent acceptance found incomplete manifest provenance, runtime dependency, and scoring evidence guards."
+    },
+    {
+      "protocol_version": "1.1.1-prospective",
+      "path": "tools/eagc012/confirmatory_icme_protocol_v1.1.1.json",
       "status": "FROZEN-PRE-TARGET",
       "freeze_anchor": "introducing_git_commit",
       "accrual_state": "NOT_STARTED"
