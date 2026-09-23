@@ -42,6 +42,7 @@ function escapeHtml(value){return String(value).replace(/[&<>"']/g,(char)=>({"&"
 function compileLanguage(profile,state,options={}){return globalThis.TzarLanguage.compileProduct(profile,{...state,observedQ:null},options)}
 function languageCard(language){return `<div class="method-note language-resonance"><b>${language.modelId} · ${language.profile}</b><p>${escapeHtml(language.layers.publicStatement)}</p><code>${escapeHtml(language.formula)}</code><small>O → S → I → R_g at C · Q=null до наблюдаемого возврата</small></div>`}
 function download(name,content,type){const url=URL.createObjectURL(new Blob([content],{type}));Object.assign(document.createElement("a"),{href:url,download:name}).click();URL.revokeObjectURL(url)}
+function clearReport(){currentReport=null;exportJson.disabled=true;exportMarkdown.disabled=true}
 function enableExports(){exportJson.disabled=false;exportMarkdown.disabled=false}
 function fieldControl(field,value){
   const tag=field==="axisDefinition"?"textarea":"input";
@@ -272,6 +273,7 @@ function analyzeInWorker(texts,onProgress){
 }
 
 async function runSemantic(){
+  clearReport();
   const button=$("#analyze-semantic");
   try{
     const payload=semanticPayload();
@@ -294,6 +296,7 @@ async function runSemantic(){
   }finally{button.dataset.running="false";button.querySelector("span").textContent="Провести смысл через контур";button.querySelector("b").textContent="→"}
 }
 async function run(payload=payloadFromBuilder()){
+  clearReport();
   try{setStatus("Проверка…","work");currentReport=await verifyPayload(payload);currentReportKind="structural";render(currentReport);enableExports();input.value=JSON.stringify(payload,null,2);saveDraft();setStatus(currentReport.pass?"Контур проводим":"Контур разорван",currentReport.pass?"pass":"fail")}
   catch(error){currentReport=null;result.innerHTML=`<div class="error"><strong>Невозможно выполнить проверку</strong><p>${escapeHtml(error.message)}</p></div>`;exportJson.disabled=true;exportMarkdown.disabled=true;setStatus("Ошибка входа","fail")}
 }
@@ -351,7 +354,7 @@ $("#sign-passport").onclick=()=>$("#sign-passport-file").click();
 $("#sign-passport-file").onchange=async()=>{const file=$("#sign-passport-file").files[0];if(!file)return;try{await signPassportFile(file)}catch(error){setStatus("Подпись не создана","fail");renderKeyOutput(error.message)}finally{$("#sign-passport-file").value=""}};
 $("#verify-signature").onclick=()=>$("#verify-signature-file").click();
 $("#verify-signature-file").onchange=async()=>{const file=$("#verify-signature-file").files[0];if(!file)return;try{await verifySignedPassportFile(file)}catch(error){setStatus("Файл не проверен","fail");renderKeyOutput(error.message)}finally{$("#verify-signature-file").value=""}};
-$("#verify-json").onclick=()=>{try{const payload=JSON.parse(input.value);loadBuilder(payload);run(payload)}catch(error){setStatus("Ошибка JSON","fail");result.innerHTML=`<div class="error"><strong>JSON не прочитан</strong><p>${escapeHtml(error.message)}</p></div>`}};
+$("#verify-json").onclick=()=>{clearReport();try{const payload=JSON.parse(input.value);loadBuilder(payload);run(payload)}catch(error){setStatus("Ошибка JSON","fail");result.innerHTML=`<div class="error"><strong>JSON не прочитан</strong><p>${escapeHtml(error.message)}</p></div>`}};
 $("#example").onclick=()=>{loadBuilder(structuredClone(example));run()};
 $("#reset").onclick=()=>{loadBuilder(structuredClone(example));setStatus("Пример восстановлен")};
 $("#add-form").onclick=()=>formCard({label:"Новая форма",representation:{geometry:"Euclid"},invariant:sourceInvariant()},"positive");
@@ -371,8 +374,8 @@ passportFile.onchange=async()=>{
   }finally{passportFile.value=""}
 };
 document.querySelectorAll(".mode").forEach(button=>button.onclick=()=>switchMode(button.dataset.mode));
-exportJson.onclick=()=>download(currentReportKind==="semantic"?"tzar-semantic-report.json":"tzar-conductance-report.json",JSON.stringify(currentReport,null,2),"application/json");
-exportMarkdown.onclick=()=>download(currentReportKind==="semantic"?"tzar-semantic-report.md":"tzar-conductance-report.md",currentReportKind==="semantic"?semanticReportMarkdown(currentReport):reportMarkdown(currentReport),"text/markdown");
+exportJson.onclick=()=>currentReport&&download(currentReportKind==="semantic"?"tzar-semantic-report.json":"tzar-conductance-report.json",JSON.stringify(currentReport,null,2),"application/json");
+exportMarkdown.onclick=()=>currentReport&&download(currentReportKind==="semantic"?"tzar-semantic-report.md":"tzar-conductance-report.md",currentReportKind==="semantic"?semanticReportMarkdown(currentReport):reportMarkdown(currentReport),"text/markdown");
 sourceHost.addEventListener("input",saveDraft);
 $("#semantic-source").addEventListener("input",saveSemanticDraft);
 $("#semantic-anchors").addEventListener("input",saveSemanticDraft);
