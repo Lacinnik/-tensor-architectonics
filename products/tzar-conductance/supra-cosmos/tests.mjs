@@ -51,3 +51,22 @@ assert.match(serviceWorker, /supra-cosmos-v0\.4\.0/);
 assert.doesNotMatch(html, /data:image\//);
 
 console.log("SUPRA-XR-COSMOS: 26 assertions passed");
+
+// Service worker activation must not remove another product's origin-wide cache.
+{
+  const { default: vm } = await import("node:vm");
+  const handlers = new Map(), deleted = [], opened = [];
+  let claimed = false, activation;
+  const names = ["supra-cosmos-v0.3.0", "supra-cosmos-v0.4.0", "supra-cosmos-v0.4.0-cache-scope-20260923", "rte-shell-2.0.0", "architectonica-public-release", "qengine-offline", "other-app"];
+  const worker = await readFile(new URL("./sw.js", import.meta.url), "utf8");
+  vm.runInNewContext(worker, {
+    self: { addEventListener: (name, handler) => handlers.set(name, handler), clients: { claim: async () => { claimed = true; } } },
+    caches: { keys: async () => names, delete: async key => { deleted.push(key); return true; }, open: async key => { opened.push(key); } },
+  });
+  handlers.get("activate")({ waitUntil: promise => { activation = promise; } });
+  await activation;
+  assert.deepEqual(deleted, ["supra-cosmos-v0.3.0", "supra-cosmos-v0.4.0"]);
+  assert.equal(claimed, true);
+  assert.equal(opened.length, 0);
+  console.log("Supra cache activation: old own caches removed; current and unrelated caches preserved");
+}
