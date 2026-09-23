@@ -222,7 +222,7 @@
             <div class="candidate-head"><span>КАНДИДАТ ИСТИННОГО ЗАПРОСА</span><button type="button" id="generate-candidate">Собрать формулировку</button></div>
             <label class="sr-only" for="trueRequest">Кандидат истинного запроса</label>
             <textarea id="trueRequest" name="trueRequest" rows="6" placeholder="Собери формулировку, затем измени её своими словами." required></textarea>
-            <label class="check-row" for="confirmCandidate"><input type="checkbox" id="confirmCandidate" name="confirmCandidate"><span><b>Эта формулировка ближе к тому, что действительно требует различения</b><small>Подтверждение принадлежит тебе, а не алгоритму.</small></span></label>
+            <label class="check-row" for="confirmCandidate"><input type="checkbox" id="confirmCandidate" name="confirmCandidate"><span><b>Эта формулировка ближе к тому, что действительно требует различения</b><small>Подтверждение принадлежит тебе, а не алгоритму. После изменения или новой сборки текста подтверди его заново.</small></span></label>
           </div>
           <div class="panel-actions">
             <button class="button button-ghost" type="button" data-prev>← К режимам</button>
@@ -331,6 +331,6 @@
   <script src="./qengine.js"></script>
   <script src="./tzar-language.js"></script>
   <script src="./ego-core.js"></script>
-  <script src="./app.js"></script>
+  <script src="./app.js?v=candidate-confirmation-20260923-r1"></script>
 </body>
 </html>

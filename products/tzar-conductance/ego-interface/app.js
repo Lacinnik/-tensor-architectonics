@@ -485,6 +485,7 @@
 
   byId("generate-candidate").addEventListener("click", () => {
     byId("trueRequest").value = global.TzarEgoCore.synthesizeCandidate(collectState());
+    byId("confirmCandidate").checked = false;
     clearError(byId("trueRequest"));
     saveDraftIfAllowed();
     showToast("Формулировка собрана как кандидат. Измени её, если она не твоя.");
@@ -498,6 +499,7 @@
   byId("finish-cycle").addEventListener("click", finishCycle);
 
   form.addEventListener("input", event => {
+    if (event.target.id === "trueRequest") byId("confirmCandidate").checked = false;
     if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLSelectElement) {
       clearError(event.target);
     }
