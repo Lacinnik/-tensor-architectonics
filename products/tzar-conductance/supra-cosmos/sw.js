@@ -1,4 +1,5 @@
-const CACHE = "supra-cosmos-v0.4.0";
+const CACHE_PREFIX = "supra-cosmos-";
+const CACHE = "supra-cosmos-v0.4.0-cache-scope-20260923";
 const LOCAL_ASSETS = [
   "./", "./index.html", "./styles.css", "./app.mjs", "./core.mjs", "./worker.mjs",
   "./manifest.webmanifest", "./icon.svg", "./xr-lab.html", "./xr-lab.css", "./xr-lab.mjs"
@@ -9,7 +10,7 @@ self.addEventListener("install", event => {
 });
 
 self.addEventListener("activate", event => {
-  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim()));
+  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith(CACHE_PREFIX) && key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim()));
 });
 
 self.addEventListener("fetch", event => {
