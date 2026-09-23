@@ -286,3 +286,5 @@ await test("неизвестный движок завершается техн�
 });
 
 console.log("\nВсе проверки TZAR Ego Interface пройдены.");
+
+await import("./confirmation-tests.mjs");
