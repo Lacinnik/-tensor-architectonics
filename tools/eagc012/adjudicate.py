@@ -163,6 +163,15 @@ def validate_policy(policy: dict[str, Any]) -> None:
         raise ValueError("scope_status_prefix must define in-domain and transport")
 
 
+def finite_prediction(value: Any) -> float:
+    if isinstance(value, bool):
+        raise ValueError("prediction must be a finite number, not a boolean")
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError("prediction must be a finite number")
+    return number
+
+
 def extract_predictions(
     gate_metrics: dict[str, Any],
     baselines: list[str],
@@ -177,11 +186,11 @@ def extract_predictions(
     for row in rows:
         try:
             event_ids.append(str(row["event_id"]))
-            actual.append(float(row["observed_SYM_H_min"]))
-            candidate.append(float(row["EAGC_prediction"]))
+            actual.append(finite_prediction(row["observed_SYM_H_min"]))
+            candidate.append(finite_prediction(row["EAGC_prediction"]))
             for baseline in baselines:
-                controls[baseline].append(float(row[f"{baseline}_prediction"]))
-        except (KeyError, TypeError, ValueError) as error:
+                controls[baseline].append(finite_prediction(row[f"{baseline}_prediction"]))
+        except (KeyError, TypeError, ValueError, OverflowError) as error:
             raise ValueError("invalid validation prediction row") from error
     if len(event_ids) != len(set(event_ids)):
         raise ValueError("validation event identifiers must be unique")

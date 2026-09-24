@@ -4,12 +4,13 @@ import copy
 import json
 import sys
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from adjudicate import adjudicate, percentile, validate_policy
+from adjudicate import adjudicate, extract_predictions, percentile, validate_policy
 
 
 POLICY_PATH = Path(__file__).resolve().parent / "claim_policy.json"
@@ -105,6 +106,36 @@ class ClaimAdjudicationTests(unittest.TestCase):
 
     def test_percentile_interpolates(self) -> None:
         self.assertEqual(percentile([0.0, 10.0], 0.25), 2.5)
+
+    def test_invalid_numbers_reject_before_any_comparison(self) -> None:
+        fields = [
+            "observed_SYM_H_min", "EAGC_prediction", "Newell_prediction",
+            "V_Bs_prediction", "I_Q_prediction",
+            "Burton_OBrien_McPherron_prediction",
+        ]
+        invalid = [float("nan"), float("inf"), -float("inf"),
+                   "NaN", "Infinity", "-Infinity", True, False, None,
+                   "", "not-a-number", 10 ** 400]
+        for field in fields:
+            for value in invalid:
+                with self.subTest(field=field, value=repr(value)):
+                    evidence = metrics(1.0, 10.0)
+                    evidence["validation_predictions"][0][field] = value
+                    with patch("adjudicate.comparison_metrics") as compare:
+                        with self.assertRaisesRegex(ValueError, "invalid validation prediction row"):
+                            adjudicate(evidence, self.policy, scope="in-domain")
+                        compare.assert_not_called()
+
+    def test_finite_numeric_strings_and_zero_remain_supported(self) -> None:
+        evidence = metrics(1.0, 10.0)
+        evidence["validation_predictions"][0].update({
+            "observed_SYM_H_min": "-20.5", "EAGC_prediction": 0,
+            "Newell_prediction": "0",
+        })
+        _, actual, candidate, controls = extract_predictions(evidence, ["Newell"])
+        self.assertEqual(actual[0], -20.5)
+        self.assertEqual(candidate[0], 0.0)
+        self.assertEqual(controls["Newell"][0], 0.0)
 
     def test_frozen_v05_snapshot_yields_noninferiority_pass(self) -> None:
         frozen = json.loads(FROZEN_V05.read_text(encoding="utf-8"))
