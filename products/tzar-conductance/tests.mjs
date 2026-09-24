@@ -143,3 +143,5 @@ assert.equal(egoManifest.id, "TZAR-EGO-INTERFACE-001");
 assert.equal(egoManifest.languageModel.version, "0.2.0-candidate");
 
 console.log("TZAR-PRODUCT-001: 93 assertions passed");
+
+await import("./qengine/ui-tests.mjs");
