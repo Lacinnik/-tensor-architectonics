@@ -17,6 +17,8 @@
 
 Статусы продуктов этого репозитория в общем формате — в [`ecosystem.status.json`](ecosystem.status.json).
 
+**Глоссарий терминов корпуса:** [GLOSSARY.md](GLOSSARY.md).
+
 ## Первая декларация контура
 
 [**TZAR-DECLARATION-001 — Осевание**](01-declarations/DECLARATION-001-OSEVANIE.md)  

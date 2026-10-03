@@ -15,6 +15,8 @@ Research repository of Tensor Architectonics — an authorial system by Alexande
 
 Terms such as "tensor", "theorem" or "quantum engine" are used in the author's own sense inside this system; they are not claims of peer-reviewed physics or mathematics.
 
+Key terms with their canonical (Russian) definitions: [GLOSSARY.md](GLOSSARY.md).
+
 ## Products
 
 | Product | Version | Status |
@@ -29,7 +31,7 @@ Live platform: https://lacinnik.github.io/-tensor-architectonics/ · Machine-rea
 
 ## Citing
 
-See [`CITATION.cff`](CITATION.cff).
+See [`CITATION.cff`](CITATION.cff). [`.zenodo.json`](.zenodo.json) holds the metadata for archiving releases on Zenodo with a DOI.
 
 ## Ecosystem
 
