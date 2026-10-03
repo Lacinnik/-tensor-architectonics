@@ -1,0 +1,47 @@
+{
+  "schema": "lacinnik.ecosystem-status/1.0.0",
+  "repository": "Lacinnik/-tensor-architectonics",
+  "role": "Научный канон ТзАр",
+  "products": [
+    {
+      "id": "tzar-conductance",
+      "name": "TZAR Conductance",
+      "version": "1.0.0",
+      "status": "stable",
+      "url": "https://lacinnik.github.io/-tensor-architectonics/",
+      "source": "products/tzar-conductance/release/RELEASE-1.0.md"
+    },
+    {
+      "id": "ego-interface",
+      "name": "TZAR-EGO-INTERFACE-001",
+      "version": "0.2.0-candidate",
+      "status": "candidate",
+      "detail": "candidate-local-reflection",
+      "url": "https://lacinnik.github.io/-tensor-architectonics/?mode=ego",
+      "source": "README.md"
+    },
+    {
+      "id": "supra-cosmos",
+      "name": "Supra XR COSMOS PORTAL",
+      "version": "0.4.0-candidate",
+      "status": "candidate",
+      "source": "products/tzar-conductance/supra-cosmos/README.md"
+    },
+    {
+      "id": "qengine",
+      "name": "TZAR-QENGINE",
+      "version": "0.2.0",
+      "status": "candidate",
+      "detail": "author-reviewed",
+      "url": "https://lacinnik.github.io/-tensor-architectonics/qengine/",
+      "source": "05-engineering-applications/QENGINE-001/README.md"
+    },
+    {
+      "id": "tzar-language",
+      "name": "TZAR-LANGUAGE-001",
+      "version": "0.2",
+      "status": "candidate",
+      "source": "README.md"
+    }
+  ]
+}

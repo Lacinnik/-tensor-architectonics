@@ -1,0 +1,26 @@
+{
+  "title": "Тензорная Архитектоника (Tensor Architectonics)",
+  "upload_type": "dataset",
+  "description": "Научно-исследовательский корпус Тензорной Архитектоники — авторской системы Александра Лацинника: декларации, аксиомы, теоремы, математический аппарат и инженерные приложения со статусами canonical/candidate. Research corpus of Tensor Architectonics, an authorial system by Alexander Latsinnik.",
+  "creators": [
+    {
+      "name": "Лацинник, Александр"
+    }
+  ],
+  "license": "MIT",
+  "language": "rus",
+  "keywords": [
+    "Тензорная Архитектоника",
+    "Tensor Architectonics",
+    "ТзАр",
+    "осевание",
+    "супровый инвариант"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/Lacinnik/-tensor-architectonics",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    }
+  ]
+}

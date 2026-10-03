@@ -21,7 +21,7 @@
 
 **PASS** — все восемь проверок пройдены.
 
-Паспорт исполнения: [`TZAR-CHECK-001.json`](TZAR-CHECK-001.json).
+Паспорт исполнения: [`TZAR-CHECK-001.json`](../../products/tzar-conductance/checks/TZAR-CHECK-001.json).
 
 ## Граница
 
