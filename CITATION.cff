@@ -5,6 +5,7 @@ type: dataset
 authors:
   - family-names: "Лацинник"
     given-names: "Александр"
+doi: "10.5281/zenodo.23124770"
 repository-code: "https://github.com/Lacinnik/-tensor-architectonics"
 license: MIT
 keywords:

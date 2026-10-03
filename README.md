@@ -1,5 +1,7 @@
 # Тензорная Архитектоника
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23124770.svg)](https://doi.org/10.5281/zenodo.23124770)
+
 *English summary: [README.en.md](README.en.md).*
 
 Научно-исследовательский репозиторий Тензорной Архитектоники — авторской системы Александра Лацинника.
@@ -18,6 +20,8 @@
 Статусы продуктов этого репозитория в общем формате — в [`ecosystem.status.json`](ecosystem.status.json).
 
 **Глоссарий терминов корпуса:** [GLOSSARY.md](GLOSSARY.md).
+
+**Цитирование:** DOI [10.5281/zenodo.23124770](https://doi.org/10.5281/zenodo.23124770) (архив Zenodo); метаданные — [`CITATION.cff`](CITATION.cff).
 
 ## Первая декларация контура
 

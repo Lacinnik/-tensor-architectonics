@@ -1,5 +1,7 @@
 # Tensor Architectonics (TzAr)
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23124770.svg)](https://doi.org/10.5281/zenodo.23124770)
+
 *English summary. The full, authoritative documentation is in Russian: [README.md](README.md).*
 
 Research repository of Tensor Architectonics — an authorial system by Alexander Latsinnik. The corpus is organised by level, and every document carries an explicit status (`canonical` or `candidate`).
@@ -31,7 +33,7 @@ Live platform: https://lacinnik.github.io/-tensor-architectonics/ · Machine-rea
 
 ## Citing
 
-See [`CITATION.cff`](CITATION.cff). [`.zenodo.json`](.zenodo.json) holds the metadata for archiving releases on Zenodo with a DOI.
+Archived on Zenodo: DOI [10.5281/zenodo.23124770](https://doi.org/10.5281/zenodo.23124770). Citation metadata: [`CITATION.cff`](CITATION.cff); [`.zenodo.json`](.zenodo.json) describes future releases.
 
 ## Ecosystem
 
